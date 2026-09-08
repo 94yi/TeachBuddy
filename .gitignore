@@ -1,0 +1,19 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Generated build and release artifacts (release EXEs contain embedded config)
+/build/
+/dist/
+/installer/Output/
+
+# Local build toolchains and downloaded installers
+/runtime/
+/tools/
+/python-*.exe
+
+# Per-user data and secrets
+/data/*
+!/data/config.example.json
+*.log
+
