@@ -1,0 +1,17 @@
+.git
+.venv
+.env
+.env.*
+data
+data-web
+runtime
+tools
+build
+dist
+installer
+tests
+artifacts
+__pycache__
+*.pyc
+*.log.test-tmp
+.pytest_cache

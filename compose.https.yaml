@@ -1,0 +1,28 @@
+services:
+  app:
+    environment:
+      TEACHBUDDY_SECURE_COOKIE: "true"
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      TEACHBUDDY_DOMAIN: ${TEACHBUDDY_DOMAIN:?Set a domain pointing to this server}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+volumes:
+  caddy_data:
+  caddy_config:

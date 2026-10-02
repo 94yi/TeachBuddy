@@ -17,3 +17,15 @@ __pycache__/
 !/data/config.example.json
 *.log
 
+
+# Web runtime and private configuration
+.venv/
+.env
+.env.*
+!.env.example
+/data-web/
+/artifacts/
+.pytest_cache/
+/playwright-report/
+/test-results/
+/.test-tmp/

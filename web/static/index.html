@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080710">
+  <meta name="description" content="教伴 TeachBuddy：教案撰写、AI 讨论、教学资料和文件整理，一站式教学工作台。">
+  <title>教伴 TeachBuddy · 教学工作台</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1m0-15c3-2 6-2 9-1v15c-3-1-6-1-9 1V5Z"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Zm7-2v4m-2-2h4"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5A8.5 8.5 0 0 1 10.5 3h2a8.5 8.5 0 0 1 8.5 8.5Z"/><path d="M7 10h10M7 14h6"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7h18"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="m10 3-.6 2.2-2 .9-2-.6-2 3.5L5 10.5v3l-1.6 1.6 2 3.5 2-.6 2 .9L10 21h4l.6-2.1 2-.9 2 .6 2-3.5-1.6-1.6v-3l1.6-1.6-2-3.5-2 .6-2-.9L14 3h-4Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M19 3c1 7 2 12-4 15-3 2-7 0-8-3-2-6 5-10 12-12ZM4 21 15 10"/></symbol>
+  </svg>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="教伴首页">
+        <span class="brand-mark"><svg class="icon"><use href="#i-book"/></svg><span class="brand-star">✦</span></span>
+        <span class="brand-text">教伴 <span>TeachBuddy</span></span><span class="web-badge">网页版</span>
+      </a>
+      <nav class="main-nav" aria-label="主导航">
+        <button class="nav-item active" data-nav="lesson" aria-current="page"><svg class="icon"><use href="#i-spark"/></svg><span>教案工作台</span></button>
+        <button class="nav-item" data-nav="chat"><svg class="icon"><use href="#i-chat"/></svg><span>AI 讨论</span></button>
+        <button class="nav-item" data-nav="knowledge"><svg class="icon"><use href="#i-book"/></svg><span>资料库</span></button>
+        <button class="nav-item" data-nav="files"><svg class="icon"><use href="#i-folder"/></svg><span>文件整理</span></button>
+      </nav>
+      <button class="icon-button settings-trigger" id="open-settings" aria-label="查看服务设置"><svg class="icon"><use href="#i-settings"/></svg></button>
+    </div>
+  </header>
+  <main id="main-content" class="main-shell">
+    <div id="connection-banner" class="notice notice-error" role="alert" hidden><span id="connection-message"></span><button id="retry-connection" class="text-button">重新连接</button></div>
+    <section class="page" data-page="lesson">
+      <div class="hero">
+        <div>
+          <div class="eyebrow"><span class="tiny-spark">✦</span> 每一堂好课，都从一个想法开始</div>
+          <h1>让备课，<span class="gradient-text">轻一点。</span></h1>
+          <p class="hero-subtitle">把灵感写成教案，把时间留给课堂。</p>
+        </div>
+        <div class="hero-note"><span class="hero-note-icon"><svg class="icon"><use href="#i-leaf"/></svg></span><div><strong>你的教学节奏，你来决定</strong><p>模板随时可用 · AI 按需助力</p></div></div>
+      </div>
+      <section class="scenario-section" aria-labelledby="scenario-heading">
+        <div class="section-line"><h2 id="scenario-heading">选择一个教学场景</h2><span>一点灵感，快速开始</span></div>
+        <div class="scenario-grid">
+          <button class="scenario-card" data-scenario="new"><span class="scenario-icon violet"><svg class="icon"><use href="#i-spark"/></svg></span><span><strong>新授课</strong><small>从知识引入到课堂练习</small></span><span class="card-arrow">↗</span></button>
+          <button class="scenario-card" data-scenario="review"><span class="scenario-icon blue"><svg class="icon"><use href="#i-book"/></svg></span><span><strong>复习课</strong><small>梳理脉络，巩固重难点</small></span><span class="card-arrow">↗</span></button>
+          <button class="scenario-card" data-scenario="project"><span class="scenario-icon amber"><svg class="icon"><use href="#i-grid"/></svg></span><span><strong>项目式学习</strong><small>以真实问题驱动探索</small></span><span class="card-arrow">↗</span></button>
+          <button class="scenario-card" data-scenario="class"><span class="scenario-icon green"><svg class="icon"><use href="#i-leaf"/></svg></span><span><strong>主题班会</strong><small>让表达与成长一起发生</small></span><span class="card-arrow">↗</span></button>
+        </div>
+      </section>
+      <div class="workbench">
+        <section class="panel form-panel" aria-labelledby="lesson-form-title">
+          <div class="panel-heading"><div class="heading-group"><span class="step-number">01</span><div><h2 id="lesson-form-title">描述这堂课</h2><p>给想法一个清晰的起点</p></div></div><span class="subtle-label">教案创作</span></div>
+          <form id="lesson-form">
+            <div class="field"><label for="lesson-title">课题名称 <span class="required">*</span></label><input id="lesson-title" name="title" maxlength="160" required placeholder="例如：认识三角形" autocomplete="off"></div>
+            <div class="field-row"><div class="field"><label for="lesson-subject">学科</label><input id="lesson-subject" name="subject" placeholder="例如：数学" maxlength="60" list="subject-options"><datalist id="subject-options"><option value="语文"><option value="数学"><option value="英语"><option value="科学"><option value="物理"><option value="化学"><option value="生物"><option value="历史"><option value="地理"><option value="道德与法治"><option value="信息科技"><option value="音乐"><option value="美术"><option value="体育"></datalist></div><div class="field"><label for="lesson-grade">年级</label><input id="lesson-grade" name="grade" placeholder="例如：四年级" maxlength="60"></div></div>
+            <div class="field-row"><div class="field"><label for="lesson-period">课时安排</label><input id="lesson-period" name="period" value="1 课时（40 分钟）" maxlength="60"></div><div class="field"><label for="lesson-textbook">教材版本</label><input id="lesson-textbook" name="textbook" placeholder="选填，如人教版" maxlength="100"></div></div>
+            <div class="field"><div class="label-row"><label for="lesson-template">教案模板</label><span class="template-tools"><button type="button" class="text-button" id="delete-template-button" hidden>删除当前模板</button><button type="button" class="text-button" id="import-template-button"><svg class="icon small"><use href="#i-upload"/></svg>导入模板</button></span></div><select id="lesson-template" name="template_id" required><option value="">正在加载模板…</option></select><input type="file" id="template-file" accept=".json,.docx,.txt,.md" hidden><span class="field-hint">支持 JSON、Word、TXT 或 Markdown 模板</span></div>
+            <div class="field"><label for="lesson-requirements">教学想法与要求 <span class="optional">选填</span></label><textarea id="lesson-requirements" name="requirements" rows="4" maxlength="8000" placeholder="希望学生学到什么？有哪些重点、难点或活动想法？"></textarea></div>
+            <div class="source-summary"><svg class="icon small"><use href="#i-book"/></svg><span class="selected-source-text">未选用资料</span><button type="button" class="text-button" data-go="knowledge">选择资料 <span aria-hidden="true">↗</span></button></div>
+            <fieldset class="generation-mode"><legend>生成方式</legend><label class="mode-option"><input type="radio" name="mode" value="offline" checked><span><strong>模板生成</strong><small>无需配置 AI</small></span></label><label class="mode-option" id="ai-mode-label"><input type="radio" name="mode" value="ai" id="ai-mode"><span><strong><svg class="icon small"><use href="#i-spark"/></svg>AI 创作</strong><small id="ai-mode-hint">正在检查服务</small></span></label></fieldset>
+            <button class="button button-primary generate-button" type="submit" id="generate-button"><svg class="icon"><use href="#i-spark"/></svg><span>生成教案</span><svg class="icon"><use href="#i-arrow"/></svg></button>
+            <p class="form-footnote">生成后可继续编辑、讨论改稿和导出。</p>
+          </form>
+        </section>
+        <section class="panel result-panel" id="result-panel" aria-labelledby="result-heading">
+          <div class="panel-heading"><div class="heading-group"><span class="step-number">02</span><div><h2 id="result-heading">你的教案</h2><p id="result-subtitle">让教学思路慢慢成形</p></div></div><span class="status-pill" id="result-status">等待创作</span></div>
+          <div id="result-empty" class="empty-state lesson-empty"><div class="empty-art"><div class="paper-line line-one"></div><div class="paper-line line-two"></div><svg class="icon"><use href="#i-book"/></svg><span>✦</span></div><h3>好课的起点，就在这里</h3><p>填写左侧的课堂信息，<br>让你的第一份教案有迹可循。</p><div class="empty-steps"><span>写下想法</span><i>→</i><span>生成初稿</span><i>→</i><span>打磨课堂</span></div></div>
+          <div id="result-loading" class="empty-state" aria-live="polite" hidden><span class="loader"></span><h3>正在整理教学思路…</h3><p id="generation-progress">教案完成后会显示在这里。</p></div>
+          <div id="result-content" hidden>
+            <div class="result-title-row"><label class="sr-only" for="result-title">教案标题</label><input id="result-title" maxlength="160" placeholder="教案标题"></div>
+            <label class="sr-only" for="result-body">编辑教案正文</label><textarea id="result-body" class="result-editor" spellcheck="false" maxlength="100000" placeholder="在这里编辑教案内容"></textarea>
+            <div class="editor-meta"><span id="result-character-count">0 字</span><span>可直接编辑正文</span></div>
+            <div class="editor-actions"><button type="button" class="button button-small" id="copy-result"><svg class="icon small"><use href="#i-copy"/></svg>复制</button><button type="button" class="button button-small" id="save-result"><svg class="icon small"><use href="#i-check"/></svg>保存</button><span class="action-spacer"></span><label class="sr-only" for="export-format">导出格式</label><select id="export-format" class="compact-select"><option value="docx">Word</option><option value="pptx">PPT</option><option value="txt">TXT</option></select><button type="button" class="button button-small button-soft" id="export-result"><svg class="icon small"><use href="#i-download"/></svg>导出</button></div>
+            <div class="revision-box"><label for="revision-instruction"><svg class="icon small"><use href="#i-spark"/></svg>再打磨一下</label><textarea id="revision-instruction" rows="2" maxlength="5000" placeholder="例如：增加一个小组合作活动，缩短导入环节"></textarea><button type="button" class="button button-small button-soft" id="revise-result">AI 改稿 <svg class="icon small"><use href="#i-arrow"/></svg></button><span id="revision-hint" class="field-hint"></span></div>
+          </div>
+          <div class="result-bottom-note"><svg class="icon small"><use href="#i-check"/></svg><span>教案内容请结合实际学情审阅与调整</span></div>
+        </section>
+      </div>
+      <section class="history-section" aria-labelledby="history-heading"><div class="section-line"><h2 id="history-heading"><svg class="icon small"><use href="#i-clock"/></svg>最近的教案</h2><span>保留最近 20 份 · 点击继续编辑</span></div><div id="history-list" class="history-list"><div class="quiet-empty">还没有教案，从上方创建第一份吧。</div></div></section>
+    </section>
+
+    <section class="page" data-page="chat" hidden>
+      <div class="page-intro"><div class="eyebrow">一起想一想</div><h1>让教学想法，<span class="gradient-text">多走一步。</span></h1><p>讨论教学设计、打磨课堂活动，或寻找一个新的切入点。</p></div>
+      <div class="chat-layout"><aside class="panel chat-aside"><span class="feature-icon"><svg class="icon"><use href="#i-spark"/></svg></span><h2>你的备课讨论伙伴</h2><p>从一个具体问题开始，描述年级、目标和学生的情况，会让讨论更有帮助。</p><div class="aside-label">试着这样提问</div><button class="suggestion" data-prompt="请帮我设计一个 5 分钟的课堂导入活动。我会接着告诉你课题、年级和教学目标。">一起设计课堂导入 <span>↗</span></button><button class="suggestion" data-prompt="我想让小组合作更有效，请先问我学科、年级、主题和现有的活动安排，再一起改进。">改进小组合作活动 <span>↗</span></button><button class="suggestion" data-prompt="请帮我设计分层作业，先向我了解课题、年级和学生的学习差异。">聊聊分层作业设计 <span>↗</span></button><div class="aside-sources"><div class="selected-source-text">未选用资料</div><button class="text-button" data-go="knowledge">选择参考资料 ↗</button></div><p class="small-note">讨论内容在当前页面会话内保留。刷新页面后会清空。</p></aside><section class="panel chat-panel"><div class="panel-heading"><div class="heading-group"><svg class="icon"><use href="#i-chat"/></svg><h2>AI 讨论</h2></div><button class="text-button" id="clear-chat">清空对话</button></div><div id="chat-unavailable" class="notice" hidden>AI 服务尚未配置。你仍可使用教案工作台中的模板生成功能。</div><div id="chat-messages" class="chat-messages" role="log" aria-label="讨论记录" aria-live="polite"><div class="chat-empty" id="chat-empty"><span>✦</span><h3>今天想一起讨论什么？</h3><p>一个教学疑问，也能成为好课的开始。</p></div></div><form id="chat-form" class="chat-composer"><label class="sr-only" for="chat-input">你的问题</label><textarea id="chat-input" maxlength="12000" rows="3" placeholder="写下你的想法，Enter 发送，Shift + Enter 换行" required></textarea><div class="composer-bottom"><span class="selected-source-text">未选用资料</span><button type="submit" id="send-chat" class="button button-primary button-small">发送 <svg class="icon small"><use href="#i-arrow"/></svg></button></div></form></section></div>
+    </section>
+
+    <section class="page" data-page="knowledge" hidden>
+      <div class="page-intro"><div class="eyebrow">让经验积累下来</div><h1>好资料，让灵感<span class="gradient-text">有据可依。</span></h1><p>上传教材笔记、教学样例或参考资料，勾选后用于 AI 教案生成和讨论。</p></div>
+      <div class="library-layout"><section class="panel upload-panel"><span class="feature-icon"><svg class="icon"><use href="#i-upload"/></svg></span><h2>添加教学资料</h2><p>支持 Word（.docx）、TXT 和 Markdown 文档</p><label class="upload-zone" for="knowledge-file"><svg class="icon"><use href="#i-upload"/></svg><strong>点击选择资料文件</strong><span id="knowledge-limit">文档将保存到当前服务端</span><input id="knowledge-file" type="file" accept=".docx,.txt,.md"></label><p class="small-note">勾选的资料用于 AI 功能。模板生成不调用 AI，资料内容不会自动填入模板。</p><div class="notice" id="knowledge-upload-state" role="status" hidden></div></section><section class="panel library-panel"><div class="panel-heading"><div><h2>我的资料</h2><p id="knowledge-count">正在加载</p></div><button id="clear-knowledge-selection" class="text-button">取消选择</button></div><div id="knowledge-list" class="resource-list"></div><div class="library-footer"><span id="knowledge-selected-count">已选择 0 份资料</span><button class="button button-soft button-small" data-go="lesson">返回备课 <svg class="icon small"><use href="#i-arrow"/></svg></button></div></section></div>
+    </section>
+
+    <section class="page" data-page="files" hidden>
+      <div class="page-intro"><div class="eyebrow">给教学文件一个好位置</div><h1>整理有序，<span class="gradient-text">取用从容。</span></h1><p>上传文件，预览分类与重复项，再下载整理好的 ZIP 压缩包。</p></div>
+      <div class="files-layout"><section class="panel files-options"><div class="panel-heading"><div><h2>选择与分类</h2><p>先预览，再下载</p></div><svg class="icon"><use href="#i-folder"/></svg></div><form id="files-form"><label class="upload-zone" for="organize-files"><svg class="icon"><use href="#i-upload"/></svg><strong>选择需要整理的文件</strong><span id="files-limit">支持一次选择多个文件</span><input id="organize-files" type="file" multiple required></label><div class="selected-files-note" id="selected-files-note">尚未选择文件</div><label class="checkbox-line"><input type="checkbox" id="group-by-date"><span>按整理日期增加文件夹层级</span></label><details class="rules-details"><summary>自定义分类规则 <span>可选</span></summary><div class="field"><label for="extension-rules">按扩展名分类</label><textarea id="extension-rules" rows="4" spellcheck="false" placeholder='[{"category":"课件","exts":["ppt","pptx"]}]'></textarea><span class="field-hint">JSON 数组；留空使用默认规则。扩展名可不带点。</span></div><div class="field"><label for="filename-rules">按文件名关键词分类</label><textarea id="filename-rules" rows="4" spellcheck="false" placeholder='[{"category":"考试资料","keywords":["试卷","答案"]}]'></textarea><span class="field-hint">JSON 数组；按文件名中的关键词匹配。</span></div></details><button id="preview-files" type="submit" class="button button-primary generate-button"><svg class="icon"><use href="#i-grid"/></svg>预览整理结果 <svg class="icon"><use href="#i-arrow"/></svg></button><p class="small-note"><svg class="icon small"><use href="#i-check"/></svg>只处理上传副本，不会移动或删除本机原件。</p></form></section><section class="panel file-results"><div class="panel-heading"><div><h2>整理预览</h2><p id="file-preview-summary">分类结果会出现在这里</p></div><span class="status-pill" id="file-preview-status">等待上传</span></div><div id="files-empty" class="empty-state"><span class="feature-icon"><svg class="icon"><use href="#i-folder"/></svg></span><h3>从杂乱到井然有序</h3><p>选择文件后，可先检查分类和重复项。</p></div><div id="file-preview-content" hidden><div class="table-wrap"><table><thead><tr><th scope="col">文件</th><th scope="col">分类</th><th scope="col">大小</th></tr></thead><tbody id="file-preview-list"></tbody></table></div><div class="file-download-footer"><label class="checkbox-line"><input id="exclude-duplicates" type="checkbox"><span>下载时排除重复副本</span></label><p class="field-hint" id="duplicate-hint">默认保留全部文件。</p><button id="download-files" class="button button-primary"><svg class="icon small"><use href="#i-download"/></svg>下载整理后的 ZIP</button></div></div></section></div>
+    </section>
+    <footer class="site-footer"><span><svg class="icon small"><use href="#i-book"/></svg>教伴 TeachBuddy</span><p>把时间留给教学，把灵感留在这里。</p><button class="text-button" id="footer-status">正在连接服务…</button></footer>
+  </main>
+  <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title"><div class="dialog-heading"><div><span class="eyebrow">TEACHBUDDY</span><h2 id="settings-title">服务与设置</h2></div><button id="close-settings" class="icon-button" aria-label="关闭设置"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="settings-content"><div class="settings-status"><span class="status-dot" id="settings-status-dot"></span><div><strong id="settings-ai-title">正在检查 AI 服务</strong><p id="settings-ai-description"></p></div></div><dl class="settings-facts"><div><dt>当前模型</dt><dd id="settings-model">—</dd></div><div><dt>访问保护</dt><dd id="settings-auth">—</dd></div><div><dt>文件限制</dt><dd id="settings-limits">—</dd></div></dl><div class="notice"><strong>无需配置，也能开始</strong><p>模板生成、编辑和导出可独立使用。AI 的接口地址、模型和密钥由服务器管理员配置，浏览器端无需填写密钥。</p></div><p class="small-note">教案历史与资料按浏览器会话保存在服务器。退出登录或清除 Cookie 后，可能无法再访问原工作区，请及时导出需要保留的教案。</p><button id="refresh-status" class="button full-width">刷新服务状态</button><button id="logout-button" class="button full-width" hidden>退出登录</button></div></dialog>
+  <dialog id="login-dialog" class="login-dialog" aria-labelledby="login-title"><div class="login-mark brand-mark"><svg class="icon"><use href="#i-book"/></svg><span class="brand-star">✦</span></div><span class="eyebrow">欢迎来到教伴</span><h2 id="login-title">开启你的教学工作台</h2><p>此工作台已启用访问保护，请输入访问密码。</p><form id="login-form"><label for="login-password">访问密码</label><input id="login-password" type="password" name="password" autocomplete="current-password" required placeholder="请输入访问密码"><div id="login-error" class="inline-error" role="alert" hidden></div><button type="submit" id="login-button" class="button button-primary full-width">进入工作台 <svg class="icon small"><use href="#i-arrow"/></svg></button></form><span class="small-note">访问密码由此服务的管理员提供。</span></dialog>
+  <div id="toast-region" class="toast-region" role="status" aria-live="polite" aria-atomic="false"></div>
+</body>
+</html>
