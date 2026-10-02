@@ -8,8 +8,8 @@
   <meta name="description" content="教伴 TeachBuddy：教案撰写、讲话稿、AI 讨论、教学资料和文件整理，一站式教学工作台。">
   <title>教伴 TeachBuddy · 教学工作台</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/styles.css?v=speech-1">
-  <script src="/static/app.js?v=speech-1" defer></script>
+  <link rel="stylesheet" href="/static/styles.css?v=speech-2">
+  <script src="/static/app.js?v=speech-2" defer></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -100,22 +100,24 @@
     </section>
 
     <section class="page" data-page="speech" hidden>
-      <div class="hero"><div><div class="eyebrow"><span class="tiny-spark">✦</span> 把重要的话，说得清楚</div><h1>让发言，<span class="gradient-text">更有准备。</span></h1><p class="hero-subtitle">从开学典礼到工作会议，先理清要点，再打磨表达。</p></div><div class="hero-note"><span class="hero-note-icon"><svg class="icon"><use href="#i-chat"/></svg></span><div><strong>有结构，也有你的声音</strong><p>模板起草 · 自由编辑 · Word 导出</p></div></div></div>
+      <div class="hero"><div><div class="eyebrow"><span class="tiny-spark">✦</span> 把重要的话，说得清楚</div><h1>让发言，<span class="gradient-text">更有准备。</span></h1><p class="hero-subtitle">无论会议、典礼还是重要时刻，先理清要点，再打磨表达。</p></div><div class="hero-note"><span class="hero-note-icon"><svg class="icon"><use href="#i-chat"/></svg></span><div><strong>有结构，也有你的声音</strong><p>模板起草 · 自由编辑 · Word 导出</p></div></div></div>
       <section class="scenario-section" aria-labelledby="speech-scenarios-heading"><div class="section-line"><h2 id="speech-scenarios-heading">选择一个发言场合</h2><span>按需填写，随时调整</span></div><div class="scenario-grid speech-scenarios">
         <button class="scenario-card" type="button" data-speech-occasion="开学典礼"><span class="scenario-icon violet"><svg class="icon"><use href="#i-spark"/></svg></span><span><strong>开学典礼</strong><small>新学期的期待与行动</small></span></button>
         <button class="scenario-card" type="button" data-speech-occasion="家长会"><span class="scenario-icon green"><svg class="icon"><use href="#i-leaf"/></svg></span><span><strong>家长会</strong><small>沟通观察，共同支持</small></span></button>
         <button class="scenario-card" type="button" data-speech-occasion="教研活动"><span class="scenario-icon blue"><svg class="icon"><use href="#i-book"/></svg></span><span><strong>教研活动</strong><small>分享经验，推进实践</small></span></button>
         <button class="scenario-card selected" type="button" data-speech-occasion="工作会议"><span class="scenario-icon amber"><svg class="icon"><use href="#i-grid"/></svg></span><span><strong>工作会议</strong><small>明确重点，安排下一步</small></span></button>
         <button class="scenario-card" type="button" data-speech-occasion="活动致辞"><span class="scenario-icon violet"><svg class="icon"><use href="#i-chat"/></svg></span><span><strong>活动致辞</strong><small>表达欢迎、感谢与祝愿</small></span></button>
+        <button class="scenario-card" type="button" data-speech-occasion="其他场合"><span class="scenario-icon blue"><svg class="icon"><use href="#i-spark"/></svg></span><span><strong>其他场合</strong><small>写下你的具体发言用途</small></span></button>
       </div></section>
       <div class="workbench speech-workbench">
         <section class="panel form-panel" aria-labelledby="speech-form-heading"><div class="panel-heading"><div class="heading-group"><span class="step-number">01</span><div><h2 id="speech-form-heading">理清这次发言</h2><p>关键事实和想表达的事，由你来定</p></div></div><span class="subtle-label">讲话稿创作</span></div>
           <form id="speech-form">
-            <div class="field"><label for="speech-title">发言主题 <span class="required">*</span></label><input id="speech-title" name="title" maxlength="200" required placeholder="例如：以扎实行动，开启新学期" autocomplete="off"></div>
-            <div class="field-row"><div class="field"><label for="speech-occasion">发言场合</label><select id="speech-occasion" name="occasion"><option>开学典礼</option><option>家长会</option><option>教研活动</option><option selected>工作会议</option><option>活动致辞</option></select></div><div class="field"><label for="speech-speaker">发言人身份 <span class="optional">选填</span></label><input id="speech-speaker" name="speaker" maxlength="100" placeholder="例如：班主任、教研组长"></div></div>
-            <div class="field"><label for="speech-audience">听众 <span class="optional">选填</span></label><input id="speech-audience" name="audience" maxlength="200" placeholder="例如：七年级家长、全体教师"></div>
+            <div class="field"><label for="speech-title">发言主题 <span class="required">*</span></label><input id="speech-title" name="title" maxlength="200" required placeholder="例如：携手同行，开启新的旅程" autocomplete="off"></div>
+            <div class="field-row"><div class="field"><label for="speech-occasion">发言场合</label><select id="speech-occasion" name="occasion"><option>开学典礼</option><option>家长会</option><option>教研活动</option><option selected>工作会议</option><option>活动致辞</option><option>其他场合</option></select></div><div class="field"><label for="speech-speaker">发言人身份 <span class="optional">选填</span></label><input id="speech-speaker" name="speaker" maxlength="100" placeholder="例如：主持人、负责人、亲友代表"></div></div>
+            <div class="field" id="speech-custom-occasion-field" hidden><label for="speech-custom-occasion">具体场合 <span class="required">*</span></label><input id="speech-custom-occasion" name="custom_occasion" maxlength="100" disabled placeholder="例如：毕业典礼、表彰大会、培训开班、婚礼致辞" aria-describedby="speech-custom-occasion-hint"><span class="field-hint" id="speech-custom-occasion-hint">填写这次发言的具体用途，最多 100 字。离线模式使用通用初稿，可结合具体场合编辑调整。</span></div>
+            <div class="field"><label for="speech-audience">听众 <span class="optional">选填</span></label><input id="speech-audience" name="audience" maxlength="200" placeholder="例如：与会同事、来宾、亲友"></div>
             <div class="field-row"><div class="field"><label for="speech-tone">表达语气</label><select id="speech-tone" name="tone"><option>庄重正式</option><option>亲切自然</option><option>鼓舞激励</option></select></div><div class="field"><label for="speech-length">目标篇幅</label><select id="speech-length" name="length"><option value="short">简短 · 约 600 字</option><option value="medium" selected>适中 · 约 1000 字</option><option value="long">详细 · 约 1500 字</option></select></div></div>
-            <div class="field"><label for="speech-key-points">核心要点 <span class="optional">一行一条</span></label><textarea id="speech-key-points" name="key_points" rows="5" maxlength="6000" placeholder="希望听众记住什么？&#10;有哪些已确认的事实或具体安排？&#10;下一步希望大家怎样行动？"></textarea><span class="field-hint">写下真实情况、关键数据与行动安排；生成后请核对事实和称谓。</span></div>
+            <div class="field"><label for="speech-key-points">核心要点 <span class="optional">一行一条</span></label><textarea id="speech-key-points" name="key_points" rows="5" maxlength="6000" placeholder="希望听众记住什么？&#10;有哪些已确认的事实或具体安排？&#10;想表达哪些感谢、祝愿或主张？"></textarea><span class="field-hint">写下真实情况、关键事实与想表达的话；生成后请核对事实和称谓。</span></div>
             <div class="field"><label for="speech-requirements">其他写作要求 <span class="optional">选填</span></label><textarea id="speech-requirements" name="requirements" rows="2" maxlength="2000" placeholder="例如：开场简洁，结尾明确下一步安排"></textarea></div>
             <fieldset class="generation-mode"><legend>生成方式</legend><label class="mode-option"><input type="radio" name="speech-mode" value="offline" id="speech-offline-mode" checked><span><strong>模板起草</strong><small>无需配置 AI</small></span></label><label class="mode-option" id="speech-ai-mode-label"><input type="radio" name="speech-mode" value="ai" id="speech-ai-mode"><span><strong><svg class="icon small"><use href="#i-spark"/></svg>AI 创作</strong><small id="speech-ai-mode-hint">正在检查服务</small></span></label></fieldset>
             <button id="generate-speech" type="submit" class="button button-primary generate-button"><svg class="icon"><use href="#i-spark"/></svg><span>生成讲话稿</span><svg class="icon"><use href="#i-arrow"/></svg></button><p class="form-footnote">篇幅为参考目标，正文可继续编辑与导出。</p>

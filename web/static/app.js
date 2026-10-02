@@ -631,6 +631,10 @@ function renderSpeechHistory() {
 
 function syncSpeechOccasion() {
   const occasion = $('#speech-occasion').value;
+  const custom = occasion === '其他场合';
+  $('#speech-custom-occasion-field').hidden = !custom;
+  $('#speech-custom-occasion').required = custom;
+  $('#speech-custom-occasion').disabled = !custom;
   $$('[data-speech-occasion]').forEach(button => { button.classList.toggle('selected', button.dataset.speechOccasion === occasion); });
 }
 
@@ -1123,6 +1127,7 @@ $('#logout-button').addEventListener('click', async () => {
     $('#speech-result-loading').hidden = true;
     $('#speech-result-empty').hidden = false;
     $('#speech-form').reset();
+    syncSpeechOccasion();
     $('#speech-history-list').replaceChildren();
     state.generationBusy = false;
     state.result = null;
@@ -1191,7 +1196,7 @@ $('#resource-next').addEventListener('click', () => { if (!state.resources.loadi
 $$('[data-speech-occasion]').forEach(button => button.addEventListener('click', () => {
   $('#speech-occasion').value = button.dataset.speechOccasion;
   syncSpeechOccasion();
-  $('#speech-title').focus();
+  $(button.dataset.speechOccasion === '其他场合' ? '#speech-custom-occasion' : '#speech-title').focus();
 }));
 $('#speech-occasion').addEventListener('change', syncSpeechOccasion);
 $('#speech-result-title').addEventListener('input', markSpeechDirty);
@@ -1203,6 +1208,15 @@ $('#speech-form').addEventListener('submit', async event => {
   const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
   payload.mode = payload['speech-mode'];
   delete payload['speech-mode'];
+  if (payload.occasion === '其他场合') {
+    payload.custom_occasion = $('#speech-custom-occasion').value.trim();
+    if (!payload.custom_occasion || payload.custom_occasion.length > 100) {
+      $('#speech-custom-occasion').focus();
+      return notify('请填写具体场合，最多 100 字，不能仅为空格。', true);
+    }
+  } else {
+    delete payload.custom_occasion;
+  }
   payload.title = payload.title.trim();
   if (!payload.title) return notify('请填写发言主题。', true);
   speechLoading(true, payload.mode === 'ai' ? 'AI 正在组织发言内容，请保持页面打开。' : '正在根据场合与核心要点整理初稿。');
@@ -1267,4 +1281,5 @@ $('#revise-speech').addEventListener('click', async () => {
   } catch (error) { notify(error.message, true); } finally { speechLoading(false); }
 });
 
+syncSpeechOccasion();
 initialize();

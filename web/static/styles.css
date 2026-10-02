@@ -2767,7 +2767,7 @@ dialog::backdrop {
 
 /* Speech writing reuses the editable workbench and keeps all five tools accessible. */
 .speech-scenarios {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .speech-scenarios .scenario-card {
   padding: 15px 11px;

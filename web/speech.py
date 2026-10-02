@@ -5,10 +5,10 @@ import json
 import re
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 from web.models import Payload, Short
 
-Occasion = Literal["开学典礼", "家长会", "教研活动", "工作会议", "活动致辞"]
+Occasion = Literal["开学典礼", "家长会", "教研活动", "工作会议", "活动致辞", "其他场合"]
 Tone = Literal["庄重正式", "亲切自然", "鼓舞激励"]
 LENGTHS = {"short": 600, "medium": 1000, "long": 1500}
 
@@ -16,6 +16,7 @@ LENGTHS = {"short": 600, "medium": 1000, "long": 1500}
 class SpeechGenerate(Payload):
     title: Short
     occasion: Occasion = "工作会议"
+    custom_occasion: str = Field(default="", max_length=100)
     speaker: str = Field(default="", max_length=100)
     audience: str = Field(default="", max_length=200)
     tone: Tone = "庄重正式"
@@ -23,6 +24,17 @@ class SpeechGenerate(Payload):
     key_points: str = Field(default="", max_length=6000)
     requirements: str = Field(default="", max_length=2000)
     mode: Literal["offline", "ai"] = "offline"
+
+    @field_validator("custom_occasion", mode="before")
+    @classmethod
+    def trim_custom_occasion(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def require_custom_occasion(self):
+        if self.occasion == "其他场合" and not self.custom_occasion:
+            raise ValueError("选择其他场合时，请填写具体用途")
+        return self
 
 
 SCENARIOS = {
@@ -181,7 +193,48 @@ def parsed_key_points(value: str) -> list[str]:
     return points
 
 
+OTHER_OCCASION_BASE = [
+    "首先，感谢各位在此听取我的发言。表达一段意见或说明一些情况，都需要认真对待内容本身，也需要尊重听众的理解与感受。我希望把要表达的意思说清楚，不用夸大的语言代替具体内容，不把个人的推测当成确定的结论，让大家能够准确了解发言所要传达的信息。",
+    "对于同一个话题，不同的人可能有不同的关注，也可能带着不同的经历来理解。在表达自己的看法时，我愿意保留这份尊重。可以把意见说得明确，也应给必要的疑问和不同的感受留下空间；不能因为表达方式不一样，就轻率判断别人的立场或用意。",
+    "有些内容可以直接说明，有些内容则需要更审慎地对待。涉及具体的人和事时，应当分清已知情况、个人感受和仍需确认的部分，不增加没有依据的细节，也不作超出了解范围的判断。这既是对发言负责，也是对每一位相关者以及在场听众的尊重。",
+]
+OTHER_OCCASION_DETAILS = [
+    "表达清楚，并不意味着把所有问题都说成已经有了答案。如果存在尚不确定的部分，可以如实说明；如果只是个人的理解，也应当交代这一点。与其为了让话语显得完整而填补没有依据的内容，不如保持必要的克制，让每一句具体陈述都有它能够承担的分量。",
+    "听取一段发言时，大家关注的重点未必完全相同。有人希望了解事情的背景，有人在意其中的感受，也有人希望弄清一个具体问题。对此，应当尽量以清楚、平实的语言回应，避免让含糊的说法产生额外的猜测，也避免用过多的修饰遮住真正需要表达的意思。",
+    "涉及他人的经历时，表达还需要考虑合适的边界。不是所有细节都适合在公开场合展开，也不能仅凭自己的想象替别人解释感受。必要的信息可以准确说明，不必要的私人内容则应保留。尊重具体的人，比追求一句话是否有感染力更为重要。",
+    "对不同意见，可以先确认双方所说的是不是同一个问题，再讨论各自的依据。理解别人的表达，并不要求立即赞同；清楚说明自己的想法，也不需要否定别人的感受。希望我们能够把注意力放在内容本身，让沟通保持应有的耐心和分寸。",
+    "对于重要的信息，准确往往比表达得快更有价值。如果一个说法可能被理解成另一种意思，就有必要进一步说明；如果一项内容还需要核实，就不宜提前作出确定判断。审慎并不等于回避，而是让表达与实际了解的程度相匹配，不把不确定性转交给听众去猜测。",
+    "在措辞上，也应尽量避免笼统地概括一群人，或用一个片面的细节定义某个人。每一种经历都有其具体背景，每一份感受也应得到认真对待。能够把事实、意见和情绪适当地分开说明，有助于减少误解，也能让需要被听见的内容得到更清楚的呈现。",
+    "一段发言能够说清的内容总是有限。对于没有展开的部分，不宜让听众误以为已经作出了判断；对于确有必要继续说明的问题，也可以在适当的时候进一步沟通。重要的是保持表达的诚实，不因场合需要而勉强给出没有依据的答案。",
+    "临近结束时，我仍希望强调对语言本身的责任。能够确认的内容，应当准确表达；暂时不能确认的部分，应当保留必要的说明。无论大家以怎样的视角理解这次发言，都希望其中的信息是清楚的，态度是审慎的，对人的尊重也是始终如一的。",
+]
+
+
+def render_other_occasion(payload: SpeechGenerate) -> str:
+    audience = payload.audience.strip().rstrip("：:，,。！! ") or "各位来宾、各位朋友"
+    paragraphs = ["发言人：" + payload.speaker.strip()] if payload.speaker.strip() else []
+    opening = {
+        "庄重正式": "各位，感谢大家听取我的发言。本次场合是“{occasion}”，发言主题是“{title}”。下面，我将围绕这一主题表达主要内容，尽量说明清楚其中的意思，并审慎对待具体情况与不同感受，不作没有依据的延伸。",
+        "亲切自然": "谢谢大家愿意听我说几句。在“{occasion}”这个场合，我想就“{title}”谈一谈。接下来的话，希望能够说得清楚、平实，既表达真实的想法，也给大家的理解和感受留出空间，不用过多的修饰代替内容本身。",
+        "鼓舞激励": "各位，在“{occasion}”这个场合，我想以“{title}”为题发言。无论面对怎样的情境，认真理解、清楚表达和尊重彼此，都是值得坚持的态度。希望下面的内容能够准确传达所要说明的意思，也体现应有的责任与分寸。",
+    }[payload.tone].format(occasion=payload.custom_occasion, title=payload.title)
+    paragraphs.extend([audience + "：", opening])
+    points = parsed_key_points(payload.key_points)
+    if points:
+        paragraphs.append("本次发言的核心内容是：")
+        paragraphs.extend(point if point.endswith(("。", "！", "？", ".", "!", "?")) else point + "。" for point in points)
+        paragraphs.append("以上是我希望明确表达的内容。涉及具体情况的部分，应以准确的信息为依据，不作超出这些内容的推断。")
+    paragraphs.extend(OTHER_OCCASION_BASE)
+    paragraphs.extend(OTHER_OCCASION_DETAILS[:{"short": 0, "medium": 4, "long": 8}[payload.length]])
+    paragraphs.append("最后，感谢各位认真听取这段发言。我希望主要内容已经得到清楚的表达；对于其中需要进一步说明的地方，也应保持审慎、尊重的态度。无论大家有怎样的理解与感受，都值得被认真对待，不宜用简单的结论加以概括。")
+    paragraphs.append({"庄重正式": "我的发言就到这里，谢谢大家。", "亲切自然": "今天想说的就是这些，谢谢大家的倾听。",
+                       "鼓舞激励": "愿我们始终保持认真、审慎与尊重。谢谢大家。"}[payload.tone])
+    return "\n\n".join(paragraphs) + "\n"
+
+
 def render_speech(payload: SpeechGenerate) -> str:
+    if payload.occasion == "其他场合":
+        return render_other_occasion(payload)
     scenario = SCENARIOS[payload.occasion]
     points = parsed_key_points(payload.key_points)
     audience = payload.audience.strip().rstrip("：:，,。！! ") or scenario["audience"]
@@ -209,11 +262,12 @@ def render_speech(payload: SpeechGenerate) -> str:
 
 
 def speech_messages(payload: SpeechGenerate) -> list[dict]:
-    data = payload.model_dump(exclude={"mode", "length"})
+    data = payload.model_dump(exclude={"mode", "length", "custom_occasion"})
+    data["occasion"] = payload.custom_occasion if payload.occasion == "其他场合" else payload.occasion
     data["target_characters"] = LENGTHS[payload.length]
     return [
-        {"role": "system", "content": "你是中文教育场景讲话稿写作助手。请依据用户提供的信息起草可直接朗读的完整讲话稿，称谓自然，段落衔接清楚，保持指定语气，篇幅接近目标中文字数。"
-         "只能使用用户提供的具体事实；不得编造学校名称、人员数量、成绩、获奖、政策出处或新闻，不把期望写成已经完成的成果。事实不足时使用不依赖这些事实的表述，不添加待填数字或虚构引语。"
+        {"role": "system", "content": "你是中文讲话稿写作助手，可处理教育、工作、庆典及日常生活等不同场合。请依据用户提供的真实场合和信息起草可直接朗读的完整讲话稿，称谓与内容贴合用途，段落衔接清楚，保持指定语气，篇幅接近目标中文字数。非教育场合不得套用学校、教师或学生的称谓；祝福致辞不得生硬套用工作分工和任务落实的表述。"
+         "只能使用用户提供的具体事实；不得编造人物关系、姓名、地点、共同经历、学校名称、人员数量、成绩、获奖、政策出处或新闻，不把期望写成已经完成的成果。事实不足时使用不依赖这些事实的表述，不添加待填数字或虚构引语。"
          "核心要点应融入正文，附加要求是写作指令，不要把指令逐字写入讲话。只输出讲话稿正文，不输出说明或Markdown代码围栏。"},
         {"role": "user", "content": json.dumps(data, ensure_ascii=False)},
     ]

@@ -301,3 +301,85 @@ def test_manual_speech_save_preserves_restored_editing_note(client, make_app):
         assert invalid.status_code == 422
         lesson = restarted.post("/api/history", json={"title": "教案", "body": "内容", "editing_note": generated["editing_note"]}, headers=HEADERS)
         assert lesson.status_code == 200 and "editing_note" not in lesson.json()
+
+
+@pytest.mark.parametrize("custom", [None, "", "   ", "用途" * 51])
+def test_other_occasion_requires_nonblank_bounded_purpose(client, custom):
+    payload = {"occasion": "其他场合"}
+    if custom is not None:
+        payload["custom_occasion"] = custom
+    assert generate(client, **payload).status_code == 422
+    assert client.get("/api/history?kind=speech").json()["items"] == []
+
+
+@pytest.mark.parametrize("length,bounds", [("short", (500, 800)), ("medium", (850, 1200)), ("long", (1300, 1750))])
+def test_other_occasion_has_neutral_templates_at_three_lengths(length, bounds):
+    payload = SpeechGenerate(title="珍惜相聚", occasion="其他场合", custom_occasion=" 婚礼致辞 ", length=length)
+    assert payload.custom_occasion == "婚礼致辞"
+    body = render_speech(payload)
+    assert "婚礼致辞" in body and "珍惜相聚" in body
+    assert "各位来宾、各位朋友" in body and "谢谢大家" in body
+    assert bounds[0] <= len(body) <= bounds[1]
+    for unwanted in ("学校", "老师", "教师", "学生", "工作任务", "负责人", "落实", "教学", "新郎", "新娘", "双方父母"):
+        assert unwanted not in body
+
+
+def test_other_occasion_preserves_wedding_points_without_work_paragraphs(client):
+    response = generate(client, title="相伴与祝福", occasion="其他场合", custom_occasion="婚礼致辞", speaker="朋友代表",
+                        audience="各位亲友", key_points="祝新人幸福\n感谢双方父母\n珍惜彼此陪伴", tone="亲切自然", length="long")
+    assert response.status_code == 200
+    item = response.json()
+    assert item["kind"] == "speech" and item["mode"] == "offline"
+    for content in ("婚礼致辞", "相伴与祝福", "朋友代表", "各位亲友", "祝新人幸福", "感谢双方父母", "珍惜彼此陪伴"):
+        assert content in item["body"]
+    for unrelated in ("负责人", "落实", "工作任务", "学校", "同学们", "具体措施", "实施要求"):
+        assert unrelated not in item["body"]
+    assert client.get("/api/history?kind=speech").json()["items"][0]["id"] == item["id"]
+
+
+@pytest.mark.parametrize("occasion", list(SCENARIOS))
+def test_presets_still_work_without_custom_purpose_and_ignore_inactive_value(client, occasion):
+    response = generate(client, occasion=occasion)
+    assert response.status_code == 200
+    assert SCENARIOS[occasion]["audience"] in response.json()["body"]
+    payload = SpeechGenerate(title="日常交流", occasion=occasion)
+    baseline = render_speech(payload)
+    assert render_speech(payload.model_copy(update={"custom_occasion": "婚礼致辞"})) == baseline
+
+
+def test_other_occasion_ai_receives_real_purpose_and_general_speech_instructions(make_app, monkeypatch):
+    monkeypatch.setenv("AI_BASE_URL", "https://example.invalid/v1")
+    monkeypatch.setenv("AI_MODEL", "speech-test-model")
+    server = importlib.import_module("web.server")
+    calls = []
+    def fake(self, messages):
+        calls.append(messages)
+        return "各位亲友：\n\n今天的婚礼致辞，愿新人幸福相伴。\n\n谢谢大家！"
+    monkeypatch.setattr(server.AIClient, "chat", fake)
+    with TestClient(make_app()) as browser:
+        login(browser)
+        response = generate(browser, occasion="其他场合", custom_occasion=" 婚礼致辞 ", mode="ai", length="short", key_points="愿新人幸福相伴")
+        assert response.status_code == 200
+        prompt = json.loads(calls[-1][1]["content"])
+        assert prompt["occasion"] == "婚礼致辞" and "custom_occasion" not in prompt
+        assert prompt["target_characters"] == 600 and prompt["key_points"] == "愿新人幸福相伴"
+        assert "真实场合" in calls[-1][0]["content"] and "非教育场合" in calls[-1][0]["content"]
+        assert "人物关系" in calls[-1][0]["content"]
+        response = generate(browser, occasion="家长会", custom_occasion="婚礼致辞", mode="ai")
+        assert response.status_code == 200
+        assert json.loads(calls[-1][1]["content"])["occasion"] == "家长会"
+
+@pytest.mark.parametrize("occasion", ["情况通报", "追思会发言"])
+@pytest.mark.parametrize("tone", ["庄重正式", "亲切自然", "鼓舞激励"])
+def test_other_occasion_does_not_assume_celebration_or_happiness(occasion, tone):
+    points = "相关情况尚待核实\n尊重当事人隐私\n-5℃以下暂停户外安排"
+    body = render_speech(SpeechGenerate(title="审慎表达与相互尊重", occasion="其他场合", custom_occasion=occasion,
+                                       tone=tone, key_points=points, length="long"))
+    assert occasion in body
+    for point in points.splitlines():
+        assert point in body
+    for celebratory in ("很高兴", "美好", "温暖", "祝福", "喜悦", "热忱", "相聚", "庆祝", "快乐", "幸福"):
+        assert celebratory not in body
+    for unrelated in ("负责人", "工作任务", "落实", "老师", "学生", "学校"):
+        assert unrelated not in body
+    assert "不作" in body and "尊重" in body

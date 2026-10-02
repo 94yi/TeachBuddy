@@ -66,7 +66,56 @@ def main():
                         expect(page.locator("#speech-occasion")).to_have_value(occasion)
                     page.locator('[data-speech-occasion="家长会"]').click()
                     expect(page.locator("#speech-ai-mode")).to_be_disabled()
-                    checks.append("five speech occasions and explicit offline mode")
+                    checks.append("five preset speech occasions and explicit offline mode")
+
+                    custom_occasion=page.locator("#speech-custom-occasion")
+                    expect(custom_occasion).to_be_hidden()
+                    page.locator("#speech-title").fill("携手相伴，共赴未来")
+                    page.locator("#speech-occasion").select_option("其他场合")
+                    expect(page.locator('[data-speech-occasion="其他场合"]')).to_have_class(re.compile("selected"))
+                    expect(custom_occasion).to_be_visible()
+                    expect(custom_occasion).to_have_attribute("maxlength","100")
+                    speech_requests=[]
+                    page.on("request",lambda request:speech_requests.append(request) if
+                            request.url.endswith("/api/speech/generate") and request.method=="POST" else None)
+                    for invalid in ("","   "):
+                        custom_occasion.fill(invalid)
+                        page.locator("#generate-speech").click()
+                        if not invalid:
+                            assert not custom_occasion.evaluate("(input) => input.checkValidity()"),"empty custom occasion was accepted"
+                        else:
+                            expect(page.locator("#toast-region")).to_contain_text("请填写具体场合")
+                            expect(custom_occasion).to_be_focused()
+                        expect(page.locator("#speech-history-list .history-card")).to_have_count(0)
+                    assert not speech_requests,"empty custom occasions must not reach generation API"
+                    checks.append("custom occasion rejects empty and whitespace-only input before generation")
+                    custom_occasion.fill("  婚礼致辞  ")
+                    page.locator("#speech-speaker").fill("新郎的朋友")
+                    page.locator("#speech-audience").fill("各位亲友")
+                    page.locator("#speech-key-points").fill("感谢亲友到场\n祝愿新人相互支持")
+                    with page.expect_response(lambda response:response.url.endswith("/api/speech/generate") and
+                                              response.request.method=="POST") as generated_custom:
+                        page.locator("#generate-speech").click()
+                    custom_response=generated_custom.value
+                    assert custom_response.status==200,custom_response.status
+                    assert custom_response.request.post_data_json["custom_occasion"]=="婚礼致辞"
+                    custom_item=custom_response.json()
+                    custom_editor=page.locator("#speech-result-body")
+                    for phrase in ("婚礼致辞","感谢亲友到场","祝愿新人相互支持"):
+                        expect(custom_editor).to_have_value(re.compile(phrase))
+                    expect(page.locator("#speech-history-list .history-card")).to_have_count(1)
+                    checks.append("non-school custom occasion generates a speech with trimmed name and all key points")
+                    page.screenshot(path=str(ARTIFACTS/"speech-custom-desktop.png"),full_page=True)
+                    # Remove only this test's extra speech so the existing persistence checks retain their expected counts.
+                    with page.expect_response(lambda response:response.url.endswith("/api/history/"+custom_item["id"]) and
+                                              response.request.method=="DELETE") as deleted_custom:
+                        page.locator("#speech-history-list .history-card .icon-button").first.click()
+                    assert deleted_custom.value.status==200
+                    expect(page.locator("#speech-history-list .history-card")).to_have_count(0)
+                    custom_occasion.fill("   ")
+                    page.locator("#speech-occasion").select_option("家长会")
+                    expect(custom_occasion).to_be_hidden()
+                    assert not custom_occasion.evaluate("(input) => input.required"),"hidden custom field remained required"
                     page.locator("#speech-title").fill(title)
                     page.locator("#speech-speaker").fill("班主任")
                     page.locator("#speech-audience").fill("各位家长")
@@ -82,6 +131,7 @@ def main():
                     expect(page.locator("#speech-history-list .history-card")).to_have_count(1)
                     assert page.locator("#speech-word-count").inner_text().strip()
                     assert page.locator("#speech-reading-time").inner_text().strip()
+                    checks.append("preset generation still works after hiding an invalid custom field")
                     checks.append("offline generation preserves facts and displays drafting limitations")
                     edited=editor.input_value()+"\n让我们从倾听孩子的想法开始。"
                     editor.fill(edited)
@@ -108,10 +158,22 @@ def main():
                         for section in ("lesson","speech","chat","knowledge","files"):
                             page.locator('[data-nav="'+section+'"]').click()
                             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"),f"{section} overflow at {width}"
+
+                        page.locator('[data-nav="speech"]').click()
+                        page.locator("#speech-occasion").select_option("其他场合")
+                        custom_occasion.fill("婚礼致辞")
+                        expect(custom_occasion).to_be_visible()
+                        custom_occasion.scroll_into_view_if_needed()
+                        bounds=custom_occasion.bounding_box()
+                        assert bounds and bounds["x"] >= -1 and bounds["x"]+bounds["width"] <= width+1, f"custom occasion input outside {width}px viewport"
+                        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"),f"custom occasion overflow at {width}"
+                        page.screenshot(path=str(ARTIFACTS/f"speech-custom-mobile-{width}.png"),full_page=True)
+                        page.locator("#speech-occasion").select_option("家长会")
+                        expect(custom_occasion).to_be_hidden()
                     page.set_viewport_size({"width":390,"height":844})
                     page.locator('[data-nav="speech"]').click()
                     page.screenshot(path=str(ARTIFACTS/"speech-mobile.png"),full_page=True)
-                    checks.append("all five pages and navigation fit 320px and 390px screens")
+                    checks.append("all five pages, navigation and custom occasion input fit 320px and 390px screens")
                     assert page.request.get(base+"/api/history").json()["items"]==[]
                     page.reload()
                     page.locator('[data-nav="speech"]').click()
