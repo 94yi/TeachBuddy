@@ -441,7 +441,7 @@ def create_app() -> FastAPI:
     def index():
         if not (STATIC / "index.html").exists():
             raise HTTPException(503, "网页资源尚未安装")
-        return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-cache"})
+        return FileResponse(STATIC / "index.html", headers={"Cache-Control": "public, no-cache, no-transform"})
 
     application.mount("/static", StaticFiles(directory=str(STATIC), check_dir=False), name="static")
 
