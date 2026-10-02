@@ -6,7 +6,9 @@ const state = {
   status: null, templates: [], history: [], knowledge: [], selected: new Set(),
   result: null, dirty: false, messages: [], chatBusy: false, generationBusy: false,
   fileBatch: null, fileItems: [], currentPage: 'lesson', initialized: false,
-  leaving: false, requestEpoch: 0
+  leaving: false, requestEpoch: 0,
+  resources: { items: [], total: 0, page: 1, pages: 1, loaded: false, loading: false,
+    loadId: 0, query: { q: '', subject: '', grade: '' }, attempts: [], importing: false, added: new Map() }
 };
 
 function element(tag, className, text) {
@@ -102,6 +104,7 @@ function sizeLabel(size) {
 function switchPage(page) {
   if (!['lesson', 'chat', 'knowledge', 'files'].includes(page)) return;
   state.currentPage = page;
+  if (page === 'knowledge' && state.initialized && !state.resources.loaded && !state.resources.loading) loadPublicResources();
   $$('[data-page]').forEach(node => { node.hidden = node.dataset.page !== page; });
   $$('[data-nav]').forEach(button => {
     const active = button.dataset.nav === page;
@@ -226,6 +229,7 @@ async function loadKnowledge() {
   const currentIds = new Set(state.knowledge.map(item => item.id));
   state.selected.forEach(id => { if (!currentIds.has(id)) state.selected.delete(id); });
   renderKnowledge();
+  if (state.resources.loaded && !state.resources.loading) renderPublicResources();
 }
 
 function updateSelectedSources() {
@@ -281,11 +285,229 @@ function renderKnowledge() {
   updateSelectedSources();
 }
 
+function publicArticleURL(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.hostname !== 'mp.weixin.qq.com' || url.username || url.password || (url.port && url.port !== '443')) return null;
+    return url.href;
+  } catch (_) { return null; }
+}
+
+function resourceHasFilters() {
+  const query = state.resources.query;
+  return Boolean(query.q || query.subject || query.grade);
+}
+
+function renderPublicResources() {
+  if (state.leaving) return;
+  const resources = state.resources;
+  const list = $('#public-resource-list');
+  list.replaceChildren();
+  if (!resources.items.length) {
+    const empty = element('div', 'public-resource-empty');
+    const mark = element('span', 'feature-icon');
+    mark.append(icon('book', false));
+    const filtered = resourceHasFilters();
+    empty.append(mark, element('h3', '', filtered ? '没有找到匹配的资源' : '还没有收藏公众号文章'));
+    empty.append(element('p', '', filtered ? '试试其他关键词，或重置学科与年级筛选。' : '粘贴可公开访问的文章链接，开始建立你的教学参考目录。这里只展示真实导入的文章。'));
+    list.append(empty);
+  }
+  const knowledgeIds = new Set(state.knowledge.map(item => item.id));
+  const knowledgeResourceIds = new Set(state.knowledge.map(item => item.resource_id).filter(Boolean));
+  for (const item of resources.items) {
+    const card = element('article', 'public-resource-card');
+    const account = element('div', 'article-account');
+    account.append(icon('book'), element('span', '', item.account || '未提供公众号名称'));
+    const title = element('h3', '', item.title || '未命名文章');
+    const summary = element('p', 'article-summary', item.summary || '原文未提供摘要，可打开来源文章阅读。');
+    const tags = element('div', 'article-tags');
+    tags.append(element('span', 'article-tag', item.subject || '未标注学科'), element('span', 'article-tag', item.grade || '未标注年级'));
+    const dates = element('p', 'article-date', '导入于 ' + (dateLabel(item.fetched_at) || '时间未知'));
+    if (item.published_at) dates.append(element('span', '', ' · 发布于 ' + dateLabel(item.published_at)));
+    const source = publicArticleURL(item.source_url);
+    let sourceNode;
+    if (source) {
+      sourceNode = element('a', 'article-source', '打开原文');
+      sourceNode.href = source;
+      sourceNode.target = '_blank';
+      sourceNode.rel = 'noopener noreferrer';
+      sourceNode.setAttribute('aria-label', '打开原文：' + (item.title || '未命名文章'));
+      sourceNode.append(icon('arrow'));
+    } else {
+      sourceNode = element('span', 'article-source article-source-unavailable', '原文链接不可用');
+    }
+    const actions = element('div', 'article-actions');
+    const added = knowledgeResourceIds.has(item.id) || knowledgeIds.has(resources.added.get(item.id));
+    const add = element('button', 'button button-soft button-small' + (added ? ' article-added' : ''), added ? '已加入我的资料' : '加入我的资料');
+    add.type = 'button';
+    add.disabled = added;
+    add.addEventListener('click', async () => {
+      setBusy(add, true);
+      let saved = false;
+      try {
+        const entry = await post('/api/resources/' + encodeURIComponent(item.id) + '/knowledge', {});
+        if (!entry?.id) throw new Error('服务端未返回资料信息，请刷新后检查。');
+        saved = true;
+        resources.added.set(item.id, entry.id);
+        const selected = state.selected.has(entry.id) || state.selected.size < 20;
+        if (selected) state.selected.add(entry.id);
+        await loadKnowledge();
+        notify(selected ? '文章摘要与来源已加入我的资料，并已选用。' : '已加入我的资料。当前已选 20 份，请先取消部分选择。');
+        renderPublicResources();
+      } catch (error) {
+        notify(saved ? '已加入资料，但列表刷新失败：' + error.message : error.message, true);
+      } finally { setBusy(add, false); if (saved) { add.disabled = true; add.textContent = '已加入我的资料'; add.classList.add('article-added'); } }
+    });
+    const remove = element('button', 'icon-button');
+    remove.type = 'button';
+    remove.setAttribute('aria-label', '删除资源：' + (item.title || '未命名文章'));
+    remove.title = '删除资源';
+    remove.append(icon('trash'));
+    remove.addEventListener('click', async () => {
+      if (!window.confirm('删除资源「' + (item.title || '未命名文章') + '」？此操作无法撤销；已加入“我的资料”的副本会保留。')) return;
+      setBusy(remove, true);
+      try {
+        await api('/api/resources/' + encodeURIComponent(item.id), { method: 'DELETE' });
+        await loadPublicResources(resources.page);
+        notify('资源已删除。');
+      } catch (error) { notify(error.message, true); setBusy(remove, false); }
+    });
+    actions.append(add, remove);
+    card.append(account, title, summary, tags, dates, sourceNode, actions);
+    list.append(card);
+  }
+  $('#resources-total').textContent = resources.total + ' 条资源';
+  $('#resource-pagination').hidden = !resources.total;
+  $('#resource-page-info').textContent = '共 ' + resources.total + ' 条 · 第 ' + resources.page + ' / ' + resources.pages + ' 页';
+  $('#resource-prev').disabled = resources.loading || resources.page <= 1;
+  $('#resource-next').disabled = resources.loading || resources.page >= resources.pages;
+}
+
+async function loadPublicResources(page = 1, correctedPage = false) {
+  if (state.leaving) return;
+  const resources = state.resources;
+  const loadId = ++resources.loadId;
+  resources.loading = true;
+  resources.page = Math.max(1, page);
+  $('#resource-load-error').hidden = true;
+  $('#resources-loading').hidden = false;
+  $('#public-resource-list').setAttribute('aria-busy', 'true');
+  $('#public-resource-list').replaceChildren();
+  $('#resource-pagination').hidden = true;
+  $('#resources-total').textContent = '正在加载';
+  setBusy($('#search-resources'), true);
+  $('#resource-prev').disabled = true;
+  $('#resource-next').disabled = true;
+  const params = new URLSearchParams({ ...resources.query, page: String(resources.page), page_size: '12' });
+  try {
+    const data = await api('/api/resources?' + params.toString());
+    if (state.leaving || loadId !== resources.loadId) return;
+    resources.items = Array.isArray(data.items) ? data.items : [];
+    resources.total = Math.max(0, Number(data.total) || 0);
+    resources.pages = Math.max(1, Number(data.pages) || 1);
+    resources.page = Math.max(1, Number(data.page) || resources.page);
+    resources.loaded = true;
+    if (!correctedPage && resources.total && !resources.items.length && resources.page > 1) {
+      await loadPublicResources(Math.min(resources.page - 1, resources.pages), true);
+      return;
+    }
+    renderPublicResources();
+  } catch (error) {
+    if (state.leaving || loadId !== resources.loadId) return;
+    resources.loaded = false;
+    $('#resource-load-message').textContent = error.message;
+    $('#resource-load-error').hidden = false;
+    $('#resources-total').textContent = '加载失败';
+  } finally {
+    if (!state.leaving && loadId === resources.loadId) {
+      resources.loading = false;
+      $('#resources-loading').hidden = true;
+      $('#public-resource-list').setAttribute('aria-busy', 'false');
+      setBusy($('#search-resources'), false);
+      $('#resource-prev').disabled = resources.page <= 1;
+      $('#resource-next').disabled = resources.page >= resources.pages;
+    }
+  }
+}
+
+function renderResourceImports() {
+  if (state.leaving) return;
+  const resources = state.resources;
+  $('#resource-import-feedback').hidden = !resources.attempts.length;
+  const list = $('#resource-import-attempts');
+  list.replaceChildren();
+  const success = resources.attempts.filter(item => item.status === 'success').length;
+  const failures = resources.attempts.filter(item => item.status === 'error').length;
+  const done = success + failures;
+  const current = resources.attempts.findIndex(item => item.status === 'working');
+  $('#resource-import-progress').textContent = (resources.importing && current >= 0 ? '正在读取第 ' + (current + 1) + ' 条 · ' : '已处理 ' + done + ' / ' + resources.attempts.length + ' 条 · ') + '成功 ' + success + ' 条，失败 ' + failures + ' 条';
+  resources.attempts.forEach((attempt, index) => {
+    const row = element('li', 'resource-import-attempt ' + attempt.status);
+    row.append(element('strong', '', (index + 1) + '. ' + (attempt.title || attempt.url)));
+    row.append(element('p', '', attempt.message || '等待处理'));
+    if (attempt.status === 'error') {
+      const retry = element('button', 'text-button', '重试这一条');
+      retry.type = 'button';
+      retry.disabled = resources.importing;
+      retry.addEventListener('click', () => runResourceImports([attempt]));
+      row.append(retry);
+    }
+    list.append(row);
+  });
+}
+
+async function runResourceImports(attempts) {
+  const resources = state.resources;
+  if (resources.importing || state.leaving) return;
+  resources.importing = true;
+  setBusy($('#import-resources'), true);
+  ['#resource-links', '#resource-import-subject', '#resource-import-grade'].forEach(selector => { $(selector).disabled = true; });
+  let success = 0;
+  try {
+    for (const attempt of attempts) {
+      if (state.leaving) return;
+      if ($('#login-dialog').open) {
+        attempt.status = 'error';
+        attempt.message = '请重新登录后，手动重试这一条。';
+        renderResourceImports();
+        continue;
+      }
+      attempt.status = 'working';
+      attempt.message = '正在读取文章标题、摘要与来源…';
+      renderResourceImports();
+      try {
+        const data = await post('/api/resources/import', { url: attempt.url, subject: attempt.subject, grade: attempt.grade });
+        if (state.leaving) return;
+        if (!data.item?.id) throw new Error('服务端未返回文章信息，请刷新列表后检查。');
+        attempt.status = 'success';
+        attempt.title = data.item.title;
+        attempt.message = data.created ? '已收藏文章目录信息。' : '这篇文章已在资源库中，无需重复收藏。';
+        success += 1;
+      } catch (error) {
+        if (state.leaving) return;
+        attempt.status = 'error';
+        attempt.message = error.message;
+      }
+      renderResourceImports();
+    }
+    if (success && !state.leaving && !$('#login-dialog').open) await loadPublicResources(1);
+    if (!state.leaving) notify('本次处理完成：成功 ' + success + ' 条，失败 ' + (attempts.length - success) + ' 条。', success < attempts.length);
+  } finally {
+    resources.importing = false;
+    if (!state.leaving) {
+      setBusy($('#import-resources'), false);
+      ['#resource-links', '#resource-import-subject', '#resource-import-grade'].forEach(selector => { $(selector).disabled = false; });
+      renderResourceImports();
+    }
+  }
+}
+
 async function loadWorkspace() {
   const outcomes = await Promise.allSettled([loadTemplates(), loadHistory(), loadKnowledge()]);
   const failed = outcomes.filter(item => item.status === 'rejected');
   if (failed.length) throw new Error(failed.map(item => item.reason.message).filter((item, index, all) => all.indexOf(item) === index).join('；'));
   state.initialized = true;
+  if (state.currentPage === 'knowledge') loadPublicResources();
 }
 
 async function initialize() {
@@ -757,6 +979,15 @@ $('#logout-button').addEventListener('click', async () => {
     state.result = null;
     state.history = [];
     state.knowledge = [];
+    state.resources.items = [];
+    state.resources.attempts = [];
+    state.resources.loaded = false;
+    state.resources.loadId += 1;
+    state.resources.added.clear();
+    $('#public-resource-list').replaceChildren();
+    $('#resource-import-attempts').replaceChildren();
+    $('#resource-import-form').reset();
+    $('#resource-filter-form').reset();
     state.selected.clear();
     state.fileBatch = null;
     state.fileItems = [];
@@ -782,5 +1013,30 @@ $('#logout-button').addEventListener('click', async () => {
 window.addEventListener('beforeunload', event => {
   if (!state.leaving && (state.dirty || state.generationBusy)) { event.preventDefault(); event.returnValue = ''; }
 });
+
+$('#resource-import-form').addEventListener('submit', event => {
+  event.preventDefault();
+  if (state.resources.importing) return;
+  const urls = $('#resource-links').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+  if (!urls.length) { $('#resource-links').focus(); return notify('请先粘贴文章链接。', true); }
+  if (urls.length > 5) return notify('每次最多处理 5 条文章链接，请分批收藏。', true);
+  const subject = $('#resource-import-subject').value.trim();
+  const grade = $('#resource-import-grade').value.trim();
+  state.resources.attempts = Array.from(new Set(urls)).map(url => ({ url, subject, grade, status: 'pending', message: '等待处理' }));
+  runResourceImports(state.resources.attempts);
+});
+$('#resource-filter-form').addEventListener('submit', event => {
+  event.preventDefault();
+  state.resources.query = { q: $('#resource-search').value.trim(), subject: $('#resource-subject').value.trim(), grade: $('#resource-grade').value.trim() };
+  loadPublicResources(1);
+});
+$('#clear-resource-filters').addEventListener('click', () => {
+  $('#resource-filter-form').reset();
+  state.resources.query = { q: '', subject: '', grade: '' };
+  loadPublicResources(1);
+});
+$('#retry-resources').addEventListener('click', () => loadPublicResources(state.resources.page));
+$('#resource-prev').addEventListener('click', () => { if (!state.resources.loading && state.resources.page > 1) loadPublicResources(state.resources.page - 1); });
+$('#resource-next').addEventListener('click', () => { if (!state.resources.loading && state.resources.page < state.resources.pages) loadPublicResources(state.resources.page + 1); });
 
 initialize();

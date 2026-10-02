@@ -8,8 +8,8 @@
   <meta name="description" content="教伴 TeachBuddy：教案撰写、AI 讨论、教学资料和文件整理，一站式教学工作台。">
   <title>教伴 TeachBuddy · 教学工作台</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/styles.css?v=light-1">
-  <script src="/static/app.js" defer></script>
+  <link rel="stylesheet" href="/static/styles.css?v=resources-1">
+  <script src="/static/app.js?v=resources-1" defer></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -106,6 +106,46 @@
     <section class="page" data-page="knowledge" hidden>
       <div class="page-intro"><div class="eyebrow">让经验积累下来</div><h1>好资料，让灵感<span class="gradient-text">有据可依。</span></h1><p>上传教材笔记、教学样例或参考资料，勾选后用于 AI 教案生成和讨论。</p></div>
       <div class="library-layout"><section class="panel upload-panel"><span class="feature-icon"><svg class="icon"><use href="#i-upload"/></svg></span><h2>添加教学资料</h2><p>支持 Word（.docx）、TXT 和 Markdown 文档</p><label class="upload-zone" for="knowledge-file"><svg class="icon"><use href="#i-upload"/></svg><strong>点击选择资料文件</strong><span id="knowledge-limit">文档将保存到当前服务端</span><input id="knowledge-file" type="file" accept=".docx,.txt,.md"></label><p class="small-note">勾选的资料用于 AI 功能。模板生成不调用 AI，资料内容不会自动填入模板。</p><div class="notice" id="knowledge-upload-state" role="status" hidden></div></section><section class="panel library-panel"><div class="panel-heading"><div><h2>我的资料</h2><p id="knowledge-count">正在加载</p></div><button id="clear-knowledge-selection" class="text-button">取消选择</button></div><div id="knowledge-list" class="resource-list"></div><div class="library-footer"><span id="knowledge-selected-count">已选择 0 份资料</span><button class="button button-soft button-small" data-go="lesson">返回备课 <svg class="icon small"><use href="#i-arrow"/></svg></button></div></section></div>
+      <section class="panel public-resources" aria-labelledby="resources-heading">
+        <div class="panel-heading resources-heading">
+          <div><h2 id="resources-heading">公众号教学资源</h2><p>收藏公开文章的标题、摘要和出处，让教学参考更好查找。</p></div>
+          <span class="status-pill" id="resources-total">尚未加载</span>
+        </div>
+        <div class="resources-workspace">
+          <aside class="resources-import">
+            <div class="feature-icon"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg></div>
+            <h3>从文章链接开始</h3>
+            <p class="resources-description">粘贴可公开访问的微信公众号文章链接。这里只收藏目录信息，不下载全文或附件。</p>
+            <form id="resource-import-form">
+              <div class="field"><label for="resource-links">文章链接 <span class="required">*</span></label><textarea id="resource-links" rows="5" required maxlength="10000" spellcheck="false" placeholder="https://mp.weixin.qq.com/s/…" aria-describedby="resource-links-hint"></textarea><span class="field-hint" id="resource-links-hint">每行一条，最多 5 条；依次读取，失败后可单独重试。</span></div>
+              <div class="field-row">
+                <div class="field"><label for="resource-import-subject">学科 <span class="optional">可选</span></label><input id="resource-import-subject" maxlength="40" placeholder="如：语文" list="resource-subjects"></div>
+                <div class="field"><label for="resource-import-grade">年级 <span class="optional">可选</span></label><input id="resource-import-grade" maxlength="40" placeholder="如：七年级" list="resource-grades"></div>
+              </div>
+              <button id="import-resources" class="button button-primary generate-button" type="submit"><svg class="icon small" aria-hidden="true"><use href="#i-upload"/></svg><span>收藏文章链接</span></button>
+              <p class="small-note">目前不能根据公众号名称批量读取历史文章。请逐条提供具体文章链接。</p>
+            </form>
+            <div id="resource-import-feedback" class="resource-import-feedback" hidden><p id="resource-import-progress" class="field-hint" role="status" aria-live="polite"></p><ol id="resource-import-attempts" class="resource-import-attempts"></ol></div>
+          </aside>
+          <div class="resources-collection">
+            <form id="resource-filter-form" class="resource-filters" role="search" aria-label="搜索公众号教学资源">
+              <div class="field resource-search"><label for="resource-search">搜索资源</label><input id="resource-search" type="search" maxlength="200" placeholder="搜索标题、摘要或公众号"></div>
+              <div class="resource-filter-row">
+                <div class="field"><label for="resource-subject">学科</label><input id="resource-subject" maxlength="40" list="resource-subjects" placeholder="全部学科"></div>
+                <div class="field"><label for="resource-grade">年级</label><input id="resource-grade" maxlength="40" list="resource-grades" placeholder="全部年级"></div>
+                <button type="submit" id="search-resources" class="button button-soft">搜索</button><button type="button" id="clear-resource-filters" class="text-button">重置</button>
+              </div>
+            </form>
+            <div id="resource-load-error" class="notice notice-error" role="alert" hidden><p id="resource-load-message"></p><button type="button" id="retry-resources" class="text-button">重新加载</button></div>
+            <p id="resources-loading" class="resources-loading" role="status" hidden>正在加载资源…</p>
+            <div id="public-resource-list" class="public-resource-list" aria-live="polite" aria-busy="false"></div>
+            <div class="resource-pagination" id="resource-pagination" hidden><span id="resource-page-info" class="field-hint"></span><div><button type="button" id="resource-prev" class="button button-small">上一页</button><button type="button" id="resource-next" class="button button-small">下一页</button></div></div>
+            <p class="resources-selection-hint">“加入我的资料”会保存标题、摘要与原文链接，随后可在上方“我的资料”中选用。</p>
+          </div>
+        </div>
+        <datalist id="resource-subjects"><option value="语文"><option value="数学"><option value="英语"><option value="物理"><option value="化学"><option value="生物"><option value="历史"><option value="地理"><option value="道德与法治"><option value="科学"><option value="综合实践"></datalist>
+        <datalist id="resource-grades"><option value="一年级"><option value="二年级"><option value="三年级"><option value="四年级"><option value="五年级"><option value="六年级"><option value="七年级"><option value="八年级"><option value="九年级"><option value="高一"><option value="高二"><option value="高三"></datalist>
+      </section>
     </section>
 
     <section class="page" data-page="files" hidden>

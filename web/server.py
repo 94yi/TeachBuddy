@@ -38,6 +38,7 @@ from app.core.template_engine import render_offline
 from web.models import (Chat, Download, Export, ExtensionRule, FilenameRule, Generate,
                         ImportedTemplate, Login, Revise, SavedLesson)
 from web.storage import MIB, Storage, checked_id, new_id, now
+from web.resource_api import register_resource_routes
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = Path(__file__).resolve().parent / "static"
@@ -444,6 +445,8 @@ def create_app() -> FastAPI:
         return FileResponse(STATIC / "index.html", headers={"Cache-Control": "public, no-cache, no-transform"})
 
     application.mount("/static", StaticFiles(directory=str(STATIC), check_dir=False), name="static")
+
+    register_resource_routes(application, store, workspace, limiter)
 
     @application.get("/api/status")
     def get_status(request: Request):
