@@ -10,7 +10,7 @@ from fastapi import HTTPException
 from web.storage import checked_id, new_id, now
 
 FIELDS = ("id", "title", "summary", "account", "source_url", "subject", "grade",
-          "published_at", "fetched_at", "created_at", "updated_at")
+          "published_at", "fetched_at", "created_at", "updated_at", "evidence_url", "capture_method")
 MAX_RESOURCES = 5000
 
 
@@ -38,6 +38,11 @@ class ResourceStore:
                     subject TEXT NOT NULL, grade TEXT NOT NULL, published_at TEXT NOT NULL,
                     fetched_at TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
                 )""")
+                columns = {row["name"] for row in db.execute("PRAGMA table_info(resources)")}
+                if "evidence_url" not in columns:
+                    db.execute("ALTER TABLE resources ADD COLUMN evidence_url TEXT NOT NULL DEFAULT ''")
+                if "capture_method" not in columns:
+                    db.execute("ALTER TABLE resources ADD COLUMN capture_method TEXT NOT NULL DEFAULT 'wechat'")
                 db.execute("CREATE INDEX IF NOT EXISTS resources_dates ON resources(updated_at DESC, id DESC)")
                 yield db
 
@@ -51,7 +56,9 @@ class ResourceStore:
                 raise HTTPException(409, "资源目录已达到 5000 条上限，请先删除旧资源")
             item = {key: metadata.get(key, "") for key in
                     ("title", "summary", "account", "source_url", "published_at")}
-            item.update(id=existing["id"] if existing else new_id(), subject=subject, grade=grade,
+            item.update(evidence_url=metadata.get("evidence_url", ""),
+                        capture_method=metadata.get("capture_method", "wechat"),
+                        id=existing["id"] if existing else new_id(), subject=subject, grade=grade,
                         fetched_at=stamp, updated_at=stamp,
                         created_at=existing["created_at"] if existing else stamp)
             columns = ",".join(FIELDS)

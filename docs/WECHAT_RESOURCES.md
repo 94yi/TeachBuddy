@@ -29,7 +29,7 @@
 - `DELETE /api/resources/{id}`：删除共享资源。
 - `POST /api/resources/{id}/knowledge`：复制资源目录信息到当前会话知识库。
 
-每条记录包含 `id,title,summary,account,source_url,subject,grade,published_at,fetched_at,created_at,updated_at`。目录上限 5000 条，分页最大 50 条；数据库和 WAL 文件计入已有全局存储额度。SQLite 在已有可写数据卷内初始化，兼容容器只读根目录和非 root 用户，无新增依赖。
+每条记录包含 `id,title,summary,account,source_url,subject,grade,published_at,fetched_at,created_at,updated_at,evidence_url,capture_method`。目录上限 5000 条，分页最大 50 条；数据库和 WAL 文件计入已有全局存储额度。SQLite 在已有可写数据卷内初始化，兼容容器只读根目录和非 root 用户，无新增依赖。
 
 ## 备份与验证
 
@@ -37,3 +37,27 @@
 
 `tests/test_resources.py` 使用真实临时 SQLite，外部网络全部模拟，覆盖解析、去重、重启读取、中文查询、分页、URL/DNS/跳转/超时/大小、登录校验和私有知识库隔离。模拟测试不等于已成功采集某个实际公众号；真实文章会受微信侧访问策略影响。
 `tests/resource_browser_smoke.py` 在隔离进程中替换微信网络响应，使用真实 SQLite 与网页验证导入、去重、中文筛选、分页、加入私有资料、失败提示和手机布局。所有文章均为合成测试数据，不会发送到生产站点。
+
+
+## 官网核验收录与微信直接采集
+
+`capture_method` 明确区分两种来源方式：
+
+- `wechat`：服务器成功读取公开微信文章页，提取该页直接提供的元数据。
+- `verified_listing`：管理员在机构官网等公开页面核对文章标题、公众号和微信链接后，仅收录目录信息；`evidence_url` 指向用于核验的公开页面。短摘要为人工整理，不能据此声称已成功读取微信原文。
+
+两类记录都只存元数据。资源复制进知识库时保留来源方式和核验页面，使备课使用者知道目录信息的依据。旧数据库自动增加两个字段，旧记录按 `wechat` 处理；同一规范链接之后直接采集成功，可更新为 `wechat` 并清空原核验链接。
+
+管理员可以通过本地 UTF-8 JSON 清单导入核验后的元数据：
+
+```sh
+python -m scripts.import_verified_resources --data-dir /srv/data --manifest /path/to/verified-resources.json
+```
+
+两个参数均必填。清单是包含 1–100 个对象的数组；每个对象必须有 `title`、`summary`、`account`、`source_url`、`evidence_url`，可填 `subject`、`grade`、`published_at`。摘要最大 600 字符，发布日期无法核实时留空。`source_url` 仍须符合微信文章链接格式，`evidence_url` 必须是无用户名密码、无片段、使用默认端口或 443 端口的公开 HTTPS 链接。
+
+工具在写入前验证整份清单，检查明确的本地/私有地址和不合法的链接结构，并检查现有存储配额；它不会访问外链、解析 DNS、下载页面或附件，也不会替代管理员对文章及来源可信度的实际核验。任何一条字段不合法，整份清单不会开始写入。成功输出 `created`、`updated`、`total` 数量，不输出凭据或配置。
+
+公开导入接口不接受 `capture_method` 或 `evidence_url`，访客不能通过传入这些字段把未经核验的信息伪装成官网收录。运行管理员工具需要在项目环境中使用受信任的本地清单；如果容器镜像未打包 `scripts`，应由部署管理员显式提供该脚本，不把清单作为网站静态文件公开。
+
+`tests/test_verified_resources.py` 覆盖旧数据库迁移、坏清单整批拒绝、无网络导入、重复更新、恢复微信直采来源，以及复制到知识库时保留出处。

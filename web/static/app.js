@@ -6,6 +6,7 @@ const state = {
   status: null, templates: [], history: [], knowledge: [], selected: new Set(),
   result: null, dirty: false, messages: [], chatBusy: false, generationBusy: false,
   fileBatch: null, fileItems: [], currentPage: 'lesson', initialized: false,
+  speech: { result: null, dirty: false, busy: false, history: [], historyLoaded: false },
   leaving: false, requestEpoch: 0,
   resources: { items: [], total: 0, page: 1, pages: 1, loaded: false, loading: false,
     loadId: 0, query: { q: '', subject: '', grade: '' }, attempts: [], importing: false, added: new Map() }
@@ -102,8 +103,9 @@ function sizeLabel(size) {
 }
 
 function switchPage(page) {
-  if (!['lesson', 'chat', 'knowledge', 'files'].includes(page)) return;
+  if (!['lesson', 'speech', 'chat', 'knowledge', 'files'].includes(page)) return;
   state.currentPage = page;
+  if (page === 'speech' && state.initialized && !state.speech.historyLoaded) loadSpeechHistory().catch(error => notify(error.message, true));
   if (page === 'knowledge' && state.initialized && !state.resources.loaded && !state.resources.loading) loadPublicResources();
   $$('[data-page]').forEach(node => { node.hidden = node.dataset.page !== page; });
   $$('[data-nav]').forEach(button => {
@@ -112,11 +114,12 @@ function switchPage(page) {
     if (active) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   });
-  const titles = { lesson: '教案工作台', chat: 'AI 讨论', knowledge: '资料库', files: '文件整理' };
+  const titles = { speech: '讲话稿', lesson: '教案工作台', chat: 'AI 讨论', knowledge: '资料库', files: '文件整理' };
   document.title = '教伴 TeachBuddy · ' + titles[page];
 }
 
 function updateServiceStatus() {
+  updateSpeechServiceStatus();
   const status = state.status || {};
   const configured = Boolean(status.ai_configured);
   $('#ai-mode').disabled = !configured;
@@ -373,7 +376,22 @@ function renderPublicResources() {
       } catch (error) { notify(error.message, true); setBusy(remove, false); }
     });
     actions.append(add, remove);
-    card.append(account, title, summary, tags, dates, sourceNode, actions);
+    card.append(account, title, summary, tags, dates);
+    if (item.capture_method === 'verified_listing') {
+      card.append(element('p', 'resource-provenance', '官网核验 · 仅目录信息'));
+    }
+    card.append(sourceNode);
+    if (item.capture_method === 'verified_listing') {
+      const evidence = verifiedEvidenceURL(item.evidence_url);
+      if (evidence) {
+        const link = element('a', 'article-source article-evidence', '查看核验来源');
+        link.href = evidence;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        card.append(link);
+      }
+    }
+    card.append(actions);
     list.append(card);
   }
   $('#resources-total').textContent = resources.total + ' 条资源';
@@ -502,11 +520,133 @@ async function runResourceImports(attempts) {
   }
 }
 
+function updateSpeechServiceStatus() {
+  const configured = Boolean(state.status?.ai_configured);
+  $('#speech-ai-mode').disabled = !configured;
+  $('#speech-ai-mode-label').classList.toggle('unavailable', !configured);
+  $('#speech-ai-mode-hint').textContent = configured ? '按要点组织表达' : '服务尚未配置';
+  if (!configured) $('#speech-offline-mode').checked = true;
+  $('#revise-speech').disabled = !configured || state.speech.busy;
+  $('#speech-revision-hint').textContent = configured ? '根据当前稿件与修改要求调整，请核对修改后的事实。' : 'AI 尚未配置；可直接编辑正文，或使用模板生成初稿。';
+}
+
+function updateSpeechMetrics() {
+  const count = Array.from($('#speech-result-body').value.replace(/\s/g, '')).length;
+  $('#speech-word-count').textContent = count.toLocaleString('zh-CN') + ' 字';
+  $('#speech-reading-time').textContent = count ? '朗读约 ' + Math.max(1, Math.round(count / 240)) + ' 分钟 · 按 240 字/分钟估算' : '朗读时长仅供参考';
+}
+
+function displaySpeech(item) {
+  if (state.leaving) return;
+  state.speech.result = item;
+  state.speech.dirty = false;
+  $('#speech-result-title').value = item.title || '';
+  $('#speech-result-body').value = item.body || '';
+  $('#speech-editing-note').textContent = item.editing_note || '';
+  $('#speech-editing-note').hidden = !item.editing_note;
+  $('#speech-result-empty').hidden = true;
+  $('#speech-result-loading').hidden = true;
+  $('#speech-result-content').hidden = false;
+  $('#speech-result-status').textContent = item.mode === 'manual' ? '已保存' : '已生成';
+  $('#speech-result-status').className = 'status-pill ready';
+  updateSpeechMetrics();
+}
+
+function markSpeechDirty() {
+  state.speech.dirty = true;
+  $('#speech-result-status').textContent = '待保存';
+  $('#speech-result-status').className = 'status-pill dirty';
+  updateSpeechMetrics();
+}
+
+function currentSpeech() {
+  const title = $('#speech-result-title').value.trim() || $('#speech-title').value.trim() || '讲话稿';
+  const body = $('#speech-result-body').value;
+  if (!body.trim()) throw new Error('请先生成或填写讲话稿内容。');
+  return { title, body };
+}
+
+function speechLoading(busy, message) {
+  if (state.leaving) return;
+  state.speech.busy = busy;
+  setBusy($('#generate-speech'), busy);
+  updateSpeechServiceStatus();
+  $('#speech-result-panel').setAttribute('aria-busy', String(busy));
+  $('#speech-result-loading').hidden = !busy;
+  $('#speech-result-empty').hidden = busy || Boolean(state.speech.result);
+  $('#speech-result-content').hidden = busy || !state.speech.result;
+  if (busy) {
+    $('#speech-result-status').textContent = '正在创作';
+    $('#speech-result-status').className = 'status-pill';
+    $('#speech-generation-progress').textContent = message;
+  } else {
+    $('#speech-result-status').textContent = state.speech.result ? (state.speech.dirty ? '待保存' : state.speech.result.mode === 'manual' ? '已保存' : '已生成') : '等待创作';
+    $('#speech-result-status').className = 'status-pill' + (state.speech.result ? (state.speech.dirty ? ' dirty' : ' ready') : '');
+  }
+}
+
+async function loadSpeechHistory() {
+  const data = await api('/api/history?kind=speech');
+  state.speech.history = Array.isArray(data.items) ? data.items.slice(0, 20) : [];
+  state.speech.historyLoaded = true;
+  renderSpeechHistory();
+}
+
+function renderSpeechHistory() {
+  const list = $('#speech-history-list');
+  list.replaceChildren();
+  if (!state.speech.history.length) {
+    list.append(element('div', 'quiet-empty', '还没有讲话稿，从上方开始创作。'));
+    return;
+  }
+  for (const item of state.speech.history) {
+    const card = element('div', 'history-card');
+    const open = element('button', 'history-open');
+    open.type = 'button';
+    const mode = { offline: '模板', ai: 'AI', manual: '编辑保存' }[item.mode] || '讲话稿';
+    open.append(element('strong', '', item.title || '未命名讲话稿'), element('span', '', dateLabel(item.created_at) + ' · ' + mode));
+    open.addEventListener('click', () => {
+      if (state.speech.busy) return notify('请等待当前讲话稿处理完成。');
+      if (state.speech.dirty && !window.confirm('当前讲话稿有未保存的修改。是否打开历史稿件？')) return;
+      displaySpeech(item);
+      $('#speech-result-heading').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    const remove = element('button', 'icon-button');
+    remove.type = 'button';
+    remove.setAttribute('aria-label', '删除讲话稿：' + (item.title || '未命名讲话稿'));
+    remove.append(icon('trash'));
+    remove.addEventListener('click', async () => {
+      if (!window.confirm('删除这份讲话稿历史？此操作无法撤销。')) return;
+      setBusy(remove, true);
+      try {
+        await api('/api/history/' + encodeURIComponent(item.id), { method: 'DELETE' });
+        await loadSpeechHistory();
+        notify('讲话稿历史已删除。');
+      } catch (error) { notify(error.message, true); setBusy(remove, false); }
+    });
+    card.append(icon('chat'), open, remove);
+    list.append(card);
+  }
+}
+
+function syncSpeechOccasion() {
+  const occasion = $('#speech-occasion').value;
+  $$('[data-speech-occasion]').forEach(button => { button.classList.toggle('selected', button.dataset.speechOccasion === occasion); });
+}
+
+function verifiedEvidenceURL(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && !url.username && !url.password ? url.href : null;
+  } catch (_) { return null; }
+}
+
 async function loadWorkspace() {
   const outcomes = await Promise.allSettled([loadTemplates(), loadHistory(), loadKnowledge()]);
   const failed = outcomes.filter(item => item.status === 'rejected');
   if (failed.length) throw new Error(failed.map(item => item.reason.message).filter((item, index, all) => all.indexOf(item) === index).join('；'));
   state.initialized = true;
+  if (state.currentPage === 'speech') loadSpeechHistory().catch(error => notify(error.message, true));
   if (state.currentPage === 'knowledge') loadPublicResources();
 }
 
@@ -968,13 +1108,22 @@ $('#login-form').addEventListener('submit', async event => {
   } finally { setBusy(button, false); }
 });
 $('#logout-button').addEventListener('click', async () => {
-  if (state.dirty && !window.confirm('当前教案有未保存修改，仍要退出登录？')) return;
+  if ((state.dirty || state.speech.dirty) && !window.confirm('当前稿件有未保存的修改，仍要退出登录？')) return;
   setBusy($('#logout-button'), true);
   try {
     await post('/api/logout', {});
     state.leaving = true;
     state.requestEpoch += 1;
     state.dirty = false;
+    state.speech = { result: null, dirty: false, busy: false, history: [], historyLoaded: false };
+    $('#speech-result-title').value = '';
+    $('#speech-result-body').value = '';
+    $('#speech-revision-instruction').value = '';
+    $('#speech-result-content').hidden = true;
+    $('#speech-result-loading').hidden = true;
+    $('#speech-result-empty').hidden = false;
+    $('#speech-form').reset();
+    $('#speech-history-list').replaceChildren();
     state.generationBusy = false;
     state.result = null;
     state.history = [];
@@ -1011,7 +1160,7 @@ $('#logout-button').addEventListener('click', async () => {
   } catch (error) { notify(error.message, true); setBusy($('#logout-button'), false); }
 });
 window.addEventListener('beforeunload', event => {
-  if (!state.leaving && (state.dirty || state.generationBusy)) { event.preventDefault(); event.returnValue = ''; }
+  if (!state.leaving && (state.dirty || state.generationBusy || state.speech.dirty || state.speech.busy)) { event.preventDefault(); event.returnValue = ''; }
 });
 
 $('#resource-import-form').addEventListener('submit', event => {
@@ -1038,5 +1187,84 @@ $('#clear-resource-filters').addEventListener('click', () => {
 $('#retry-resources').addEventListener('click', () => loadPublicResources(state.resources.page));
 $('#resource-prev').addEventListener('click', () => { if (!state.resources.loading && state.resources.page > 1) loadPublicResources(state.resources.page - 1); });
 $('#resource-next').addEventListener('click', () => { if (!state.resources.loading && state.resources.page < state.resources.pages) loadPublicResources(state.resources.page + 1); });
+
+$$('[data-speech-occasion]').forEach(button => button.addEventListener('click', () => {
+  $('#speech-occasion').value = button.dataset.speechOccasion;
+  syncSpeechOccasion();
+  $('#speech-title').focus();
+}));
+$('#speech-occasion').addEventListener('change', syncSpeechOccasion);
+$('#speech-result-title').addEventListener('input', markSpeechDirty);
+$('#speech-result-body').addEventListener('input', markSpeechDirty);
+$('#speech-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (state.speech.busy || !event.currentTarget.reportValidity()) return;
+  if (state.speech.dirty && !window.confirm('当前讲话稿有未保存的修改。是否生成新稿？')) return;
+  const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+  payload.mode = payload['speech-mode'];
+  delete payload['speech-mode'];
+  payload.title = payload.title.trim();
+  if (!payload.title) return notify('请填写发言主题。', true);
+  speechLoading(true, payload.mode === 'ai' ? 'AI 正在组织发言内容，请保持页面打开。' : '正在根据场合与核心要点整理初稿。');
+  try {
+    displaySpeech(await post('/api/speech/generate', payload));
+    notify('讲话稿已生成，请核对事实并打磨表达。');
+    try { await loadSpeechHistory(); } catch (error) { notify('稿件已生成，历史刷新失败：' + error.message, true); }
+    if (window.innerWidth <= 620) $('#speech-result-heading').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) { notify(error.message, true); } finally { speechLoading(false); }
+});
+$('#save-speech').addEventListener('click', async () => {
+  const button = $('#save-speech');
+  try {
+    const data = currentSpeech();
+    setBusy(button, true);
+    const item = await post('/api/history', { ...data, kind: 'speech', mode: 'manual', editing_note: state.speech.result?.editing_note || '' });
+    displaySpeech(item);
+    notify('讲话稿已保存。');
+    try { await loadSpeechHistory(); } catch (error) { notify('稿件已保存，历史刷新失败：' + error.message, true); }
+  } catch (error) { notify(error.message, true); } finally { setBusy(button, false); }
+});
+$('#copy-speech').addEventListener('click', async () => {
+  try {
+    const data = currentSpeech();
+    const text = data.title + '\n\n' + data.body;
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const temporary = element('textarea', 'sr-only');
+      temporary.value = text;
+      document.body.append(temporary);
+      temporary.select();
+      const copied = document.execCommand('copy');
+      temporary.remove();
+      if (!copied) throw new Error('浏览器未允许自动复制，请手动选择正文复制。');
+    }
+    notify('讲话稿已复制。');
+  } catch (error) { notify(error.message, true); }
+});
+$('#export-speech').addEventListener('click', async () => {
+  const button = $('#export-speech');
+  try {
+    const data = currentSpeech();
+    const format = $('#speech-export-format').value;
+    setBusy(button, true);
+    const response = await post('/api/export', { ...data, format }, { binary: true });
+    await downloadResponse(response, data.title + '.' + format);
+    notify('讲话稿已准备好，正在下载。');
+  } catch (error) { notify(error.message, true); } finally { setBusy(button, false); }
+});
+$('#revise-speech').addEventListener('click', async () => {
+  if (state.speech.busy || !state.status?.ai_configured) return;
+  const instruction = $('#speech-revision-instruction').value.trim();
+  if (!instruction) { $('#speech-revision-instruction').focus(); return notify('请先填写改稿要求。', true); }
+  try {
+    const data = currentSpeech();
+    speechLoading(true, 'AI 正在根据修改要求调整讲话稿，请保持页面打开。');
+    displaySpeech(await post('/api/lesson/revise', { ...data, kind: 'speech', instruction, knowledge_ids: [] }));
+    $('#speech-revision-instruction').value = '';
+    notify('讲话稿已更新，请检查改稿内容。');
+    try { await loadSpeechHistory(); } catch (error) { notify('改稿完成，历史刷新失败：' + error.message, true); }
+  } catch (error) { notify(error.message, true); } finally { speechLoading(false); }
+});
 
 initialize();

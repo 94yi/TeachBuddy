@@ -2764,3 +2764,60 @@ dialog::backdrop {
     flex-wrap: wrap;
   }
 }
+
+/* Speech writing reuses the editable workbench and keeps all five tools accessible. */
+.speech-scenarios {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.speech-scenarios .scenario-card {
+  padding: 15px 11px;
+  gap: 8px;
+}
+.speech-scenarios .scenario-card small {
+  font-size: 9px;
+}
+.speech-editing-note {
+  margin: 14px 22px 0;
+}
+.resource-provenance {
+  color: var(--quiet);
+  font-size: 9px;
+  margin-top: 10px;
+}
+.article-evidence {
+  margin-top: 0;
+}
+@media (max-width: 1050px) {
+  .speech-scenarios {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 620px) {
+  .main-nav {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    padding: 3px;
+  }
+  .main-nav .nav-item {
+    flex-direction: column;
+    min-width: 0;
+    padding: 8px 2px;
+    gap: 4px;
+    font-size: 10px;
+  }
+  .main-nav .nav-item .icon {
+    width: 16px;
+    height: 16px;
+  }
+  .speech-scenarios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .speech-scenarios .scenario-card small {
+    font-size: 8px;
+  }
+  .speech-editing-note {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+}

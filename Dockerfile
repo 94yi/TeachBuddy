@@ -8,6 +8,7 @@ COPY app/__init__.py app/config.py ./app/
 COPY app/core ./app/core
 COPY app/resources ./app/resources
 COPY web ./web
+COPY scripts/import_verified_resources.py ./scripts/
 RUN mkdir -p /srv/data && chown -R teachbuddy:teachbuddy /srv/data
 USER 10001:10001
 EXPOSE 8000

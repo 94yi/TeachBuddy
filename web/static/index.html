@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f6fb">
   <meta name="color-scheme" content="light">
-  <meta name="description" content="教伴 TeachBuddy：教案撰写、AI 讨论、教学资料和文件整理，一站式教学工作台。">
+  <meta name="description" content="教伴 TeachBuddy：教案撰写、讲话稿、AI 讨论、教学资料和文件整理，一站式教学工作台。">
   <title>教伴 TeachBuddy · 教学工作台</title>
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/styles.css?v=resources-1">
-  <script src="/static/app.js?v=resources-1" defer></script>
+  <link rel="stylesheet" href="/static/styles.css?v=speech-1">
+  <script src="/static/app.js?v=speech-1" defer></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -39,6 +39,7 @@
       </a>
       <nav class="main-nav" aria-label="主导航">
         <button class="nav-item active" data-nav="lesson" aria-current="page"><svg class="icon"><use href="#i-spark"/></svg><span>教案工作台</span></button>
+        <button class="nav-item" data-nav="speech"><svg class="icon"><use href="#i-chat"/></svg><span>讲话稿</span></button>
         <button class="nav-item" data-nav="chat"><svg class="icon"><use href="#i-chat"/></svg><span>AI 讨论</span></button>
         <button class="nav-item" data-nav="knowledge"><svg class="icon"><use href="#i-book"/></svg><span>资料库</span></button>
         <button class="nav-item" data-nav="files"><svg class="icon"><use href="#i-folder"/></svg><span>文件整理</span></button>
@@ -98,6 +99,39 @@
       <section class="history-section" aria-labelledby="history-heading"><div class="section-line"><h2 id="history-heading"><svg class="icon small"><use href="#i-clock"/></svg>最近的教案</h2><span>保留最近 20 份 · 点击继续编辑</span></div><div id="history-list" class="history-list"><div class="quiet-empty">还没有教案，从上方创建第一份吧。</div></div></section>
     </section>
 
+    <section class="page" data-page="speech" hidden>
+      <div class="hero"><div><div class="eyebrow"><span class="tiny-spark">✦</span> 把重要的话，说得清楚</div><h1>让发言，<span class="gradient-text">更有准备。</span></h1><p class="hero-subtitle">从开学典礼到工作会议，先理清要点，再打磨表达。</p></div><div class="hero-note"><span class="hero-note-icon"><svg class="icon"><use href="#i-chat"/></svg></span><div><strong>有结构，也有你的声音</strong><p>模板起草 · 自由编辑 · Word 导出</p></div></div></div>
+      <section class="scenario-section" aria-labelledby="speech-scenarios-heading"><div class="section-line"><h2 id="speech-scenarios-heading">选择一个发言场合</h2><span>按需填写，随时调整</span></div><div class="scenario-grid speech-scenarios">
+        <button class="scenario-card" type="button" data-speech-occasion="开学典礼"><span class="scenario-icon violet"><svg class="icon"><use href="#i-spark"/></svg></span><span><strong>开学典礼</strong><small>新学期的期待与行动</small></span></button>
+        <button class="scenario-card" type="button" data-speech-occasion="家长会"><span class="scenario-icon green"><svg class="icon"><use href="#i-leaf"/></svg></span><span><strong>家长会</strong><small>沟通观察，共同支持</small></span></button>
+        <button class="scenario-card" type="button" data-speech-occasion="教研活动"><span class="scenario-icon blue"><svg class="icon"><use href="#i-book"/></svg></span><span><strong>教研活动</strong><small>分享经验，推进实践</small></span></button>
+        <button class="scenario-card selected" type="button" data-speech-occasion="工作会议"><span class="scenario-icon amber"><svg class="icon"><use href="#i-grid"/></svg></span><span><strong>工作会议</strong><small>明确重点，安排下一步</small></span></button>
+        <button class="scenario-card" type="button" data-speech-occasion="活动致辞"><span class="scenario-icon violet"><svg class="icon"><use href="#i-chat"/></svg></span><span><strong>活动致辞</strong><small>表达欢迎、感谢与祝愿</small></span></button>
+      </div></section>
+      <div class="workbench speech-workbench">
+        <section class="panel form-panel" aria-labelledby="speech-form-heading"><div class="panel-heading"><div class="heading-group"><span class="step-number">01</span><div><h2 id="speech-form-heading">理清这次发言</h2><p>关键事实和想表达的事，由你来定</p></div></div><span class="subtle-label">讲话稿创作</span></div>
+          <form id="speech-form">
+            <div class="field"><label for="speech-title">发言主题 <span class="required">*</span></label><input id="speech-title" name="title" maxlength="200" required placeholder="例如：以扎实行动，开启新学期" autocomplete="off"></div>
+            <div class="field-row"><div class="field"><label for="speech-occasion">发言场合</label><select id="speech-occasion" name="occasion"><option>开学典礼</option><option>家长会</option><option>教研活动</option><option selected>工作会议</option><option>活动致辞</option></select></div><div class="field"><label for="speech-speaker">发言人身份 <span class="optional">选填</span></label><input id="speech-speaker" name="speaker" maxlength="100" placeholder="例如：班主任、教研组长"></div></div>
+            <div class="field"><label for="speech-audience">听众 <span class="optional">选填</span></label><input id="speech-audience" name="audience" maxlength="200" placeholder="例如：七年级家长、全体教师"></div>
+            <div class="field-row"><div class="field"><label for="speech-tone">表达语气</label><select id="speech-tone" name="tone"><option>庄重正式</option><option>亲切自然</option><option>鼓舞激励</option></select></div><div class="field"><label for="speech-length">目标篇幅</label><select id="speech-length" name="length"><option value="short">简短 · 约 600 字</option><option value="medium" selected>适中 · 约 1000 字</option><option value="long">详细 · 约 1500 字</option></select></div></div>
+            <div class="field"><label for="speech-key-points">核心要点 <span class="optional">一行一条</span></label><textarea id="speech-key-points" name="key_points" rows="5" maxlength="6000" placeholder="希望听众记住什么？&#10;有哪些已确认的事实或具体安排？&#10;下一步希望大家怎样行动？"></textarea><span class="field-hint">写下真实情况、关键数据与行动安排；生成后请核对事实和称谓。</span></div>
+            <div class="field"><label for="speech-requirements">其他写作要求 <span class="optional">选填</span></label><textarea id="speech-requirements" name="requirements" rows="2" maxlength="2000" placeholder="例如：开场简洁，结尾明确下一步安排"></textarea></div>
+            <fieldset class="generation-mode"><legend>生成方式</legend><label class="mode-option"><input type="radio" name="speech-mode" value="offline" id="speech-offline-mode" checked><span><strong>模板起草</strong><small>无需配置 AI</small></span></label><label class="mode-option" id="speech-ai-mode-label"><input type="radio" name="speech-mode" value="ai" id="speech-ai-mode"><span><strong><svg class="icon small"><use href="#i-spark"/></svg>AI 创作</strong><small id="speech-ai-mode-hint">正在检查服务</small></span></label></fieldset>
+            <button id="generate-speech" type="submit" class="button button-primary generate-button"><svg class="icon"><use href="#i-spark"/></svg><span>生成讲话稿</span><svg class="icon"><use href="#i-arrow"/></svg></button><p class="form-footnote">篇幅为参考目标，正文可继续编辑与导出。</p>
+          </form>
+        </section>
+        <section class="panel result-panel" id="speech-result-panel" aria-labelledby="speech-result-heading"><div class="panel-heading"><div class="heading-group"><span class="step-number">02</span><div><h2 id="speech-result-heading">你的讲话稿</h2><p>先有清晰初稿，再添个人表达</p></div></div><span id="speech-result-status" class="status-pill">等待创作</span></div>
+          <div id="speech-result-empty" class="empty-state lesson-empty"><div class="empty-art"><div class="paper-line line-one"></div><div class="paper-line line-two"></div><svg class="icon"><use href="#i-chat"/></svg><span>✦</span></div><h3>让想说的话，慢慢成形</h3><p>选择场合，写下主题与要点，<br>生成一份可以继续打磨的讲话稿。</p><div class="empty-steps"><span>梳理要点</span><i>→</i><span>生成初稿</span><i>→</i><span>练习表达</span></div></div>
+          <div id="speech-result-loading" class="empty-state" aria-live="polite" hidden><span class="loader"></span><h3>正在整理发言思路…</h3><p id="speech-generation-progress">完成后将在这里显示讲话稿。</p></div>
+          <div id="speech-result-content" hidden><div class="result-title-row"><label for="speech-result-title" class="sr-only">讲话稿标题</label><input id="speech-result-title" maxlength="200" placeholder="讲话稿标题"></div><div class="notice speech-editing-note" id="speech-editing-note" role="status" hidden></div><label for="speech-result-body" class="sr-only">编辑讲话稿正文</label><textarea id="speech-result-body" class="result-editor" spellcheck="false" maxlength="100000" placeholder="在这里编辑讲话稿内容"></textarea><div class="editor-meta"><span id="speech-word-count">0 字</span><span id="speech-reading-time">朗读时长仅供参考</span></div>
+            <div class="editor-actions"><button id="copy-speech" type="button" class="button button-small"><svg class="icon small"><use href="#i-copy"/></svg>复制</button><button id="save-speech" type="button" class="button button-small"><svg class="icon small"><use href="#i-check"/></svg>保存</button><span class="action-spacer"></span><label class="sr-only" for="speech-export-format">讲话稿导出格式</label><select id="speech-export-format" class="compact-select"><option value="docx">Word</option><option value="txt">TXT</option></select><button id="export-speech" type="button" class="button button-small button-soft"><svg class="icon small"><use href="#i-download"/></svg>导出</button></div>
+            <div class="revision-box"><label for="speech-revision-instruction"><svg class="icon small"><use href="#i-spark"/></svg>再打磨一下</label><textarea id="speech-revision-instruction" rows="2" maxlength="5000" placeholder="例如：让开场更自然，保留已有数字与事实"></textarea><button id="revise-speech" type="button" class="button button-small button-soft">AI 改稿 <svg class="icon small"><use href="#i-arrow"/></svg></button><span id="speech-revision-hint" class="field-hint"></span></div>
+          </div><div class="result-bottom-note"><svg class="icon small"><use href="#i-check"/></svg><span>请核对称谓、事实和具体安排，再用于正式发言</span></div>
+        </section>
+      </div>
+      <section class="history-section" aria-labelledby="speech-history-heading"><div class="section-line"><h2 id="speech-history-heading"><svg class="icon small"><use href="#i-clock"/></svg>最近的讲话稿</h2><span>保留最近 20 份 · 点击继续编辑</span></div><div id="speech-history-list" class="history-list"><div class="quiet-empty">还没有讲话稿，从上方开始创作。</div></div></section>
+    </section>
     <section class="page" data-page="chat" hidden>
       <div class="page-intro"><div class="eyebrow">一起想一想</div><h1>让教学想法，<span class="gradient-text">多走一步。</span></h1><p>讨论教学设计、打磨课堂活动，或寻找一个新的切入点。</p></div>
       <div class="chat-layout"><aside class="panel chat-aside"><span class="feature-icon"><svg class="icon"><use href="#i-spark"/></svg></span><h2>你的备课讨论伙伴</h2><p>从一个具体问题开始，描述年级、目标和学生的情况，会让讨论更有帮助。</p><div class="aside-label">试着这样提问</div><button class="suggestion" data-prompt="请帮我设计一个 5 分钟的课堂导入活动。我会接着告诉你课题、年级和教学目标。">一起设计课堂导入 <span>↗</span></button><button class="suggestion" data-prompt="我想让小组合作更有效，请先问我学科、年级、主题和现有的活动安排，再一起改进。">改进小组合作活动 <span>↗</span></button><button class="suggestion" data-prompt="请帮我设计分层作业，先向我了解课题、年级和学生的学习差异。">聊聊分层作业设计 <span>↗</span></button><div class="aside-sources"><div class="selected-source-text">未选用资料</div><button class="text-button" data-go="knowledge">选择参考资料 ↗</button></div><p class="small-note">讨论内容在当前页面会话内保留。刷新页面后会清空。</p></aside><section class="panel chat-panel"><div class="panel-heading"><div class="heading-group"><svg class="icon"><use href="#i-chat"/></svg><h2>AI 讨论</h2></div><button class="text-button" id="clear-chat">清空对话</button></div><div id="chat-unavailable" class="notice" hidden>AI 服务尚未配置。你仍可使用教案工作台中的模板生成功能。</div><div id="chat-messages" class="chat-messages" role="log" aria-label="讨论记录" aria-live="polite"><div class="chat-empty" id="chat-empty"><span>✦</span><h3>今天想一起讨论什么？</h3><p>一个教学疑问，也能成为好课的开始。</p></div></div><form id="chat-form" class="chat-composer"><label class="sr-only" for="chat-input">你的问题</label><textarea id="chat-input" maxlength="12000" rows="3" placeholder="写下你的想法，Enter 发送，Shift + Enter 换行" required></textarea><div class="composer-bottom"><span class="selected-source-text">未选用资料</span><button type="submit" id="send-chat" class="button button-primary button-small">发送 <svg class="icon small"><use href="#i-arrow"/></svg></button></div></form></section></div>
@@ -108,7 +142,7 @@
       <div class="library-layout"><section class="panel upload-panel"><span class="feature-icon"><svg class="icon"><use href="#i-upload"/></svg></span><h2>添加教学资料</h2><p>支持 Word（.docx）、TXT 和 Markdown 文档</p><label class="upload-zone" for="knowledge-file"><svg class="icon"><use href="#i-upload"/></svg><strong>点击选择资料文件</strong><span id="knowledge-limit">文档将保存到当前服务端</span><input id="knowledge-file" type="file" accept=".docx,.txt,.md"></label><p class="small-note">勾选的资料用于 AI 功能。模板生成不调用 AI，资料内容不会自动填入模板。</p><div class="notice" id="knowledge-upload-state" role="status" hidden></div></section><section class="panel library-panel"><div class="panel-heading"><div><h2>我的资料</h2><p id="knowledge-count">正在加载</p></div><button id="clear-knowledge-selection" class="text-button">取消选择</button></div><div id="knowledge-list" class="resource-list"></div><div class="library-footer"><span id="knowledge-selected-count">已选择 0 份资料</span><button class="button button-soft button-small" data-go="lesson">返回备课 <svg class="icon small"><use href="#i-arrow"/></svg></button></div></section></div>
       <section class="panel public-resources" aria-labelledby="resources-heading">
         <div class="panel-heading resources-heading">
-          <div><h2 id="resources-heading">公众号教学资源</h2><p>收藏公开文章的标题、摘要和出处，让教学参考更好查找。</p></div>
+          <div><h2 id="resources-heading">公众号教学资源</h2><p>登录后共享的文章目录：收藏标题、摘要和出处，让教学参考更好查找。</p></div>
           <span class="status-pill" id="resources-total">尚未加载</span>
         </div>
         <div class="resources-workspace">

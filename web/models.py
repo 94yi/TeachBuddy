@@ -34,11 +34,14 @@ class Generate(KnowledgeSelection):
     mode: Literal["offline", "ai"] = "offline"
 
 class Revise(KnowledgeSelection):
+    kind: Literal["lesson", "speech"] = "lesson"
     title: Short
     body: Body
     instruction: str = Field(min_length=1, max_length=8000)
 
 class SavedLesson(Payload):
+    kind: Literal["lesson", "speech"] = "lesson"
+    editing_note: str = Field(default="", max_length=500)
     title: Short
     body: Body
     mode: Literal["manual"] = "manual"

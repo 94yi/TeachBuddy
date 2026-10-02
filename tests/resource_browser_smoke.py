@@ -41,7 +41,8 @@ def serve(port: int):
             "title": "校验资源 <img src=x onerror=alert(1)>" if number == 0 else f"合成教学资源 {number:02}",
             "summary": "纯文本 <script>alert(1)</script>；这条数据仅用于本地浏览器验收。",
             "account": "测试教学账号", "source_url": f"https://mp.weixin.qq.com/s/TeachBuddySeed{number:08}",
-            "published_at": "2026-10-01"}, "数学" if number == 0 else "语文", "四年级")
+            "published_at": "2026-10-01", "capture_method": "verified_listing" if number == 0 else "wechat",
+            "evidence_url": "https://www.shnu.edu.cn/_t774/93/bc/c26244a758716/page.psp" if number == 0 else ""}, "数学" if number == 0 else "语文", "四年级")
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 
 
@@ -99,8 +100,10 @@ def main():
                     expect(cards).to_have_count(1)
                     expect(cards.locator("h3")).to_contain_text("<img src=x onerror=alert(1)>")
                     assert cards.locator("img,script").count() == 0
-                    expect(cards.locator(".article-source")).to_have_attribute("rel", "noopener noreferrer")
-                    checks.append("Chinese search, filters and untrusted text escaping")
+                    expect(cards.locator(".article-source:not(.article-evidence)")).to_have_attribute("rel", "noopener noreferrer")
+                    expect(cards).to_contain_text("官网核验")
+                    expect(cards.get_by_role("link", name="查看核验来源", exact=True)).to_have_attribute("rel", "noopener noreferrer")
+                    checks.append("Chinese search, filters, provenance and untrusted text escaping")
                     cards.get_by_role("button", name="加入我的资料", exact=True).click()
                     expect(page.locator("#knowledge-list .resource-row")).to_have_count(1)
                     expect(page.locator("#knowledge-selected-count")).to_contain_text("1")

@@ -66,9 +66,12 @@ def register_resource_routes(application: FastAPI, storage: Storage,
         resource = catalogue.get(resource_id)
         parts = [resource["title"], "公众号：" + resource["account"] if resource["account"] else "",
                  resource["summary"], "原文链接：" + resource["source_url"],
+                 "元数据来源：" + ("官网核验" if resource["capture_method"] == "verified_listing" else "微信直采"),
+                 "核验页面：" + resource["evidence_url"] if resource["evidence_url"] else "",
                  "此资料仅含文章目录信息与来源摘要，不包含文章全文。"]
         text = "\n\n".join(part for part in parts if part)
         item = {"id": new_id(), "title": resource["title"], "text": text, "chars": len(text),
-                "created_at": now(), "source_url": resource["source_url"], "resource_id": resource["id"]}
+                "created_at": now(), "source_url": resource["source_url"], "resource_id": resource["id"],
+                "evidence_url": resource["evidence_url"], "capture_method": resource["capture_method"]}
         storage.save(workspace_id, "knowledge", item, max_items=50)
         return {key: value for key, value in item.items() if key != "text"}
