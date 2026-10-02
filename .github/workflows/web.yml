@@ -1,0 +1,23 @@
+name: Web checks
+on:
+  push:
+    paths: ['web/**', 'app/core/**', 'app/resources/**', 'requirements-web.txt', 'requirements-test.txt', 'tests/**', '.github/workflows/web.yml']
+  pull_request:
+    paths: ['web/**', 'app/core/**', 'app/resources/**', 'requirements-web.txt', 'requirements-test.txt', 'tests/**', '.github/workflows/web.yml']
+permissions:
+  contents: read
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: python -m pip install -r requirements-test.txt
+      - run: python -m pytest -q
+      - run: node --check web/static/app.js

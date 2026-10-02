@@ -1,0 +1,29 @@
+services:
+  app:
+    environment:
+      TEACHBUDDY_SECURE_COOKIE: "true"
+      TEACHBUDDY_PUBLIC_URL: https://${TEACHBUDDY_DOMAIN:?Set the public domain}
+  tunnel:
+    image: ${TEACHBUDDY_TUNNEL_IMAGE:-cloudflare/cloudflared:2026.9.3}
+    restart: unless-stopped
+    network_mode: host
+    user: "${TEACHBUDDY_TUNNEL_UID:-1000}:${TEACHBUDDY_TUNNEL_GID:-1000}"
+    depends_on:
+      app:
+        condition: service_healthy
+    command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/config.yml", "run"]
+    volumes:
+      - ./.deployment/cloudflared.yml:/etc/cloudflared/config.yml:ro
+      - ./.deployment/tunnel.json:/etc/cloudflared/credentials.json:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=32M,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

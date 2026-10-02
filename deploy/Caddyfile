@@ -1,0 +1,9 @@
+{$TEACHBUDDY_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy app:8000 {
+        transport http {
+            response_header_timeout 180s
+        }
+    }
+    header Strict-Transport-Security "max-age=31536000"
+}
