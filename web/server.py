@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import hmac
 import io
+import ipaddress
 import json
 import logging
 import os
@@ -17,10 +18,10 @@ import zipfile
 from collections import OrderedDict, deque
 from pathlib import Path
 from typing import Callable
-from urllib.parse import urlsplit
+from urllib.parse import quote, quote_from_bytes, urlsplit
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import TypeAdapter, ValidationError
 from starlette.background import BackgroundTask
@@ -54,6 +55,34 @@ def env_bool(name: str, default: bool = False) -> bool:
     return os.environ.get(name, str(default)).strip().lower() in {"true", "1", "yes"}
 
 
+def validated_public_url(value: str) -> str:
+    """Validate a fixed HTTPS origin, explicitly enabled only behind a trusted proxy."""
+    if not value:
+        return ""
+    try:
+        if re.search(r"[\s\x00-\x1f\x7f\\?#]", value):
+            raise ValueError
+        parsed = urlsplit(value)
+        if (parsed.scheme != "https" or not parsed.netloc or not parsed.hostname
+                or parsed.username is not None or parsed.password is not None
+                or parsed.path not in {"", "/"} or parsed.query or parsed.fragment):
+            raise ValueError
+        port = parsed.port
+        if parsed.netloc.endswith(":") or (port is not None and not 1 <= port <= 65535):
+            raise ValueError
+        host = parsed.hostname
+        if ":" in host:
+            host = "[" + str(ipaddress.IPv6Address(host)) + "]"
+        else:
+            host = host.encode("idna").decode("ascii").lower()
+            if len(host) > 253 or not all(re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label)
+                                          for label in host.rstrip(".").split(".")):
+                raise ValueError
+        return "https://" + host + (":" + str(port) if port is not None else "")
+    except (ValueError, UnicodeError):
+        raise RuntimeError("TEACHBUDDY_PUBLIC_URL 必须是 HTTPS 根网址，不能包含认证信息、路径、查询或片段") from None
+
+
 class Settings:
     def __init__(self):
         self.production = os.environ.get("TEACHBUDDY_ENV", "development").lower() == "production"
@@ -65,6 +94,7 @@ class Settings:
             raise RuntimeError("TEACHBUDDY_SECRET 至少需要 32 字符")
         self.secret = self.secret or secrets.token_urlsafe(48)
         self.secure_cookie = env_bool("TEACHBUDDY_SECURE_COOKIE", self.production)
+        self.public_url = validated_public_url(os.environ.get("TEACHBUDDY_PUBLIC_URL", ""))
         self.data_dir = Path(os.environ.get("TEACHBUDDY_DATA_DIR") or (ROOT / "data-web"))
         self.auth_stamp = hmac.new(self.secret.encode(), self.password.encode(), hashlib.sha256).hexdigest()
         self.ai_base = os.environ.get("AI_BASE_URL", "").strip().rstrip("/")
@@ -141,6 +171,23 @@ class RequestGuard:
 
         async def reject(code, detail):
             await JSONResponse({"detail": detail}, status_code=code)(scope, receive, safe_send)
+
+        # Enabled only with a configured canonical origin and a trusted proxy header.
+        # Never derive the redirect host from Host or X-Forwarded-Host.
+        forwarded_protocols = [value for key, value in scope.get("headers", [])
+                               if key.lower() == b"x-forwarded-proto"]
+        if self.settings.public_url and forwarded_protocols == [b"http"]:
+            raw_path = scope.get("raw_path")
+            target_path = (quote_from_bytes(raw_path, safe="/%:@!$&'()*+,;=-._~")
+                           if raw_path is not None else quote(path, safe="/:@!$&'()*+,;=-._~"))
+            if not target_path.startswith("/"):
+                target_path = "/" + target_path
+            target = self.settings.public_url + target_path
+            query = scope.get("query_string", b"")
+            if query:
+                target += "?" + quote_from_bytes(query, safe="/%:@!$&'()*+,;=?-._~")
+            await RedirectResponse(target, status_code=308)(scope, receive, safe_send)
+            return
 
         session = scope.get("session", {})
         mutating = method in {"POST", "PUT", "PATCH", "DELETE"}

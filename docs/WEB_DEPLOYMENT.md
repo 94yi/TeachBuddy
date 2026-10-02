@@ -116,3 +116,40 @@ python tests/container_smoke.py
 ```
 
 浏览器检查使用临时密码和隔离测试数据，输出截图到 artifacts/；容器检查只创建并移除带随机名称的测试容器。
+## 使用 Cloudflare Tunnel（内网服务器）
+
+已有 Cloudflare 管理的域名时，可使用命名隧道，无需把 80/443 端口开放到公网。应用仍绑定 127.0.0.1:8765。使用独立隧道可避免修改现有站点；运行时只挂载该隧道的凭据，不挂载账户级 cert.pem。
+
+1. 在 Cloudflare 完成账户登录，准备账户的 cert.pem；确认域名与隧道属于同一账户。
+2. 在项目目录创建权限为 700 的 .deployment，创建命名隧道并把凭据保存为 .deployment/tunnel.json。该目录已从 Git 和构建上下文排除。
+3. 根据创建结果写入 .deployment/cloudflared.yml，并替换下面的 UUID 和域名：
+
+```yaml
+tunnel: YOUR_TUNNEL_UUID
+credentials-file: /etc/cloudflared/credentials.json
+protocol: http2
+metrics: 127.0.0.1:20242
+ingress:
+  - hostname: YOUR_DOMAIN
+    service: http://127.0.0.1:8765
+  - service: http_status:404
+```
+
+把这两个文件权限设为 600。在 .env 设置 TEACHBUDDY_DOMAIN；如文件拥有者不是 UID/GID 1000，同时设置 TEACHBUDDY_TUNNEL_UID、TEACHBUDDY_TUNNEL_GID。可用 TEACHBUDDY_TUNNEL_IMAGE 指定已经验证的 cloudflared 镜像。
+
+```sh
+docker compose -f compose.yaml -f compose.tunnel.yaml up -d --no-build
+curl --fail http://127.0.0.1:20242/ready
+```
+
+隧道就绪后，用持有 cert.pem 的 cloudflared 执行 tunnel route dns YOUR_TUNNEL_UUID YOUR_DOMAIN，创建代理 CNAME。不要使用覆盖 DNS 选项，先确认域名没有其他站点占用。确认 Cloudflare Universal SSL 已启用，再验证 https://YOUR_DOMAIN/healthz。
+
+隧道和 HTTPS 覆盖配置会设置 TEACHBUDDY_PUBLIC_URL，使经可信代理转发的 HTTP 请求跳转到固定的 HTTPS 域名。此功能只在显式配置此变量且代理传入 X-Forwarded-Proto: http 时生效；本机健康检查不受影响。请保持应用端口仅对回环开放。
+
+更新时继续使用同一组 compose 文件，以保留隧道：
+
+```sh
+docker compose -f compose.yaml -f compose.tunnel.yaml up -d --no-build
+```
+
+备份应包括 .env、.deployment/tunnel.json、.deployment/cloudflared.yml 和应用数据卷，均私密保存。账户级 cert.pem 不需要放入项目。

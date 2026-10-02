@@ -28,4 +28,5 @@ __pycache__/
 .pytest_cache/
 /playwright-report/
 /test-results/
-/.test-tmp/
+/.test-tmp*/
+/.deployment/

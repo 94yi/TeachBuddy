@@ -13,5 +13,7 @@ tests
 artifacts
 __pycache__
 *.pyc
-*.log.test-tmp
+*.log.test-tmp*
 .pytest_cache
+.deployment
+*.tar

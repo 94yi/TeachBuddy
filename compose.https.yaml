@@ -2,6 +2,7 @@ services:
   app:
     environment:
       TEACHBUDDY_SECURE_COOKIE: "true"
+      TEACHBUDDY_PUBLIC_URL: https://${TEACHBUDDY_DOMAIN:?Set the public domain}
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
