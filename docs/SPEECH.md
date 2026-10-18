@@ -66,7 +66,3 @@ AI 模式复用 `AI_BASE_URL / AI_API_KEY / AI_MODEL` 及现有超时、并发�
 - AI 优化：沿用 `POST /api/lesson/revise`，传 `{title,body,instruction,kind:"speech"}`，使用讲话稿专用提示并保存新的讲话稿历史。省略 `kind` 保持原教案优化逻辑。
 - 删除：`DELETE /api/history/{id}`，仍校验会话归属。
 - Word/TXT：沿用 `POST /api/export`，传 `{title,body,format:"docx"}` 或 `format:"txt"`。
-
-测试 `tests/test_speech.py` 覆盖五种预设和其他场合、篇幅、语气和用户要点、字段长度、自定义名称的空值与空白校验、鉴权和 CSRF、AI 请求模拟及故障、旧历史兼容、分类保留、会话隔离和 Word/TXT 文件内容；不调用外部 AI。
-
-`tests/speech_browser_smoke.py` 使用临时本地实例和真实 Chrome，验证自定义场合空白阻止提交、婚礼致辞名称与要点保留、切回预设正常生成、编辑保存与复制、Word/TXT 导出、历史恢复与删除，以及 320px 和 390px 界面的自定义输入可见性和无横向溢出。临时自定义稿验证完即删除，不影响后续历史计数；产物写入项目 `artifacts` 目录。

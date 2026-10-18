@@ -92,8 +92,8 @@ ssh -N -L 8765:127.0.0.1:8765 user@host
 ## 验证
 
 ```sh
-python -m pip install -r requirements-test.txt
-python -m pytest -q
+python -m pip install -r requirements-web.txt
+python -m compileall -q web app/core app/resources
 ```
 
 发布后验收：健康检查、密码登录、离线教案、Word/PPT 下载、知识库导入、分类 ZIP 下载、手机页面、刷新后历史恢复；AI 配置完成后再验证生成、讨论与备用服务。真实 AI 的内容质量与学校场景适配仍需使用者校对。
@@ -108,14 +108,6 @@ docker compose build --build-arg PYTHON_IMAGE=public.ecr.aws/docker/library/pyth
 docker compose up -d --no-build
 ```
 
-高级验证（本机需已安装 Chrome，容器测试需 Docker）：
-
-```sh
-python tests/browser_smoke.py
-python tests/container_smoke.py
-```
-
-浏览器检查使用临时密码和隔离测试数据，输出截图到 artifacts/；容器检查只创建并移除带随机名称的测试容器。
 ## 使用 Cloudflare Tunnel（内网服务器）
 
 已有 Cloudflare 管理的域名时，可使用命名隧道，无需把 80/443 端口开放到公网。应用仍绑定 127.0.0.1:8765。使用独立隧道可避免修改现有站点；运行时只挂载该隧道的凭据，不挂载账户级 cert.pem。
